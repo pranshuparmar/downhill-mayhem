@@ -20,6 +20,7 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 ## Play it
 
 - **In your browser (desktop or phone):** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
+- **On itch.io:** [pranshuparmar.itch.io/downhill-mayhem](https://pranshuparmar.itch.io/downhill-mayhem)
 - **Locally:** just double-click `index.html`. (It needs internet access once, to fetch
   the Three.js library from its CDN — everything else is inside the file.)
 
