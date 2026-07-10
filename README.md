@@ -34,8 +34,8 @@ The whole game is a single self-contained `index.html` — no build step, no npm
 | Input | Action |
 |---|---|
 | `↑` / `W` | Pedal |
-| `↓` / `S` | Brake |
-| `←` `→` / `A` `D` | Steer |
+| `↓` / `S` | Brake — or **Backflip** while airborne |
+| `←` `→` / `A` `D` | Steer — hold a hard turn at speed to break into a slide |
 | `Space` | Bunny hop — hop right at a ramp lip for bonus air |
 | `Z` `X` `C` | Tricks while airborne: No Hander / Superman / Heel Clicker |
 | `Shift` | Boost (drains the meter) |
@@ -47,7 +47,7 @@ The whole game is a single self-contained `index.html` — no build step, no npm
 
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
-Start a trick in the air and *land after it finishes* to bank boost meter; land mid-trick
+Start a trick in the air and *land after its bar fills* to bank boost meter; land mid-trick
 and you eat dirt. Chain tricks in one jump for bonus meter, and clean riding trickles
 meter in on its own — crashing dumps most of it. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate

@@ -74,6 +74,12 @@
   #count { position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); font-size:150px; color:#ffd23f;
     text-shadow:6px 6px 0 rgba(0,0,0,.85); }
 
+  /* trick progress: land after the bar fills (turns green near the end) */
+  #trickWrap { position:absolute; left:50%; top:57%; width:170px; height:10px; margin-left:-85px;
+    border:2px solid #fff; background:rgba(0,0,0,.45); box-shadow:2px 2px 0 rgba(0,0,0,.8); transform:skewX(-8deg); }
+  #trickFill { height:100%; width:0%; background:#ff5040; }
+  #trickFill.safe { background:#59ff7a; }
+
   #muteTag { position:absolute; top:60px; right:26px; font-size:15px; color:#ffd23f; }
   #hint { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); font-size:12px; color:rgba(255,255,255,.75);
     font-style:normal; text-shadow:2px 2px 0 rgba(0,0,0,.8); transition:opacity 1s; white-space:nowrap; }
@@ -130,11 +136,12 @@
   #tJump  { right:calc(14px + env(safe-area-inset-right)); bottom:calc(16px + env(safe-area-inset-bottom)); width:92px; height:92px; }
   #tPunch { right:calc(116px + env(safe-area-inset-right)); bottom:calc(14px + env(safe-area-inset-bottom)); width:66px; height:66px; font-size:26px; }
   #tKick  { right:calc(190px + env(safe-area-inset-right)); bottom:calc(26px + env(safe-area-inset-bottom)); width:60px; height:60px; font-size:24px; }
-  #tBoost { right:calc(196px + env(safe-area-inset-right)); bottom:calc(100px + env(safe-area-inset-bottom)); width:74px; height:74px; font-size:14px; }
+  #tBoost { right:calc(140px + env(safe-area-inset-right)); bottom:calc(142px + env(safe-area-inset-bottom)); width:74px; height:74px; font-size:14px; }
   .tbtn.trick { width:56px; height:56px; font-size:10px; }
   #tT1 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(122px + env(safe-area-inset-bottom)); }
-  #tT2 { right:calc(78px + env(safe-area-inset-right)); bottom:calc(134px + env(safe-area-inset-bottom)); }
-  #tT3 { right:calc(140px + env(safe-area-inset-right)); bottom:calc(122px + env(safe-area-inset-bottom)); }
+  #tT2 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(122px + env(safe-area-inset-bottom)); }
+  #tT3 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
+  #tT4 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
   #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
   #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
@@ -183,9 +190,10 @@
     </div>
     <div id="prog"><div class="flag">🏁</div></div>
     <div id="popups"></div>
+    <div id="trickWrap" class="hidden"><div id="trickFill"></div></div>
     <div id="count" class="hidden"></div>
     <div id="muteTag" class="hidden">🔇 MUTED</div>
-    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute &nbsp;·&nbsp; T filter</div>
+    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; ↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute</div>
   </div>
 
   <div id="title">
@@ -196,7 +204,8 @@
       <span><b>S / ↓</b></span><span>Brake</span>
       <span><b>A D / ← →</b></span><span>Steer</span>
       <span><b>SPACE</b></span><span>Bunny hop (hop off a ramp lip for extra air)</span>
-      <span><b>Z X C</b></span><span>Tricks — airborne only, land before they finish… or don't</span>
+      <span><b>Z X C</b></span><span>Tricks — airborne only, land after the bar fills</span>
+      <span><b>↓ / S in air</b></span><span>Backflip</span>
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
       <span><b>E</b></span><span>Punch a nearby rider</span>
       <span><b>F</b></span><span>Kick — works mid-air for bonus boost</span>
@@ -217,6 +226,7 @@
     <div class="tbtn trick" id="tT1">NO<br>HAND</div>
     <div class="tbtn trick" id="tT2">SUPER<br>MAN</div>
     <div class="tbtn trick" id="tT3">HEEL<br>CLICK</div>
+    <div class="tbtn trick" id="tT4">BACK<br>FLIP</div>
     <div class="tbtn tiny" id="tMute">🔊</div>
     <div class="tbtn tiny" id="tRestart">⟳</div>
   </div>
@@ -270,9 +280,10 @@ const LAT_CLAMP=27.5;                      // valley wall
 const G=11.5;                              // arcade gravity
 const DRAG=0.0030, SOFTCAP_V=33, SLOPE_K=1.48;
 const PEDAL_A=5.8, PEDAL_VMAX=18, BRAKE_A=10.5, ROLL_F=0.35;
-const STEER_BASE=2.6, STEER_VK=0.19, STEER_RESP=7.5, CENTRIF_K=0.72, AIR_CTRL=0.32;
+const STEER_BASE=2.6, STEER_VK=0.21, STEER_RESP=7.5, CENTRIF_K=0.72, AIR_CTRL=0.32;
+const DRIFT_AUTH=0.55, DRIFT_SCRUB=1.3;    // hard sustained cornering breaks into a slide
 const HOP_VY=3.3, RAMP_HOP_BONUS=1.9, DETACH_G=2.6;
-const STUMBLE_IMPACT=9.0, CRASH_IMPACT=13.5, CRASH_TIME=1.8, INVULN_TIME=2.6;
+const STUMBLE_IMPACT=9.5, CRASH_IMPACT=14.5, CRASH_TIME=1.8, INVULN_TIME=2.6;
 const BOOST_A=9.0, BOOST_DRAIN=27, BOOST_MIN=4;
 const METER_TRICKLE=3.5;                   // passive fill per second of clean riding
 const HIT_METER=6, AIR_STRIKE_METER=14;    // combat rewards (extra when airborne)
@@ -281,8 +292,10 @@ const TRICK_GRACE=0.22, BIGAIR_T=1.15, BIGAIR_METER=8;
 const TRICKS={
   nohander:{ dur:0.55, meter:14, name:'NO HANDER' },
   superman:{ dur:0.85, meter:24, name:'SUPERMAN' },
+  backflip:{ dur:0.95, meter:30, name:'BACKFLIP' },
   heel:    { dur:1.15, meter:38, name:'HEEL CLICKER' },
 };
+const TRICK_FORGIVE=0.88;   // trick this far done counts as landed clean
 const RIDER_DEFS=[ // slot 0 = player
   { name:'YOU',    color:0xff7f27, skin:0xd9a066, top:1.00, corner:1.00, aggr:0,    trick:0,    crashy:0 },
   { name:'BLAZE',  color:0xe0392b, skin:0x8a5a33, top:1.03, corner:0.94, aggr:0.85, trick:0.45, crashy:0.35 },
@@ -434,7 +447,7 @@ const AudioSys={
         const g=ctx.createGain(); g.gain.value=0; src.connect(f); f.connect(g); g.connect(this.master);
         src.start(); return {g,f}; };
       const w=mk('lowpass',600); this.wind=w.g; this.windF=w.f;
-      const dd=mk('lowpass',240); this.dirt=dd.g;
+      const dd=mk('lowpass',240); this.dirt=dd.g; this.dirtF=dd.f;
       const bb=mk('bandpass',1400); this.boost=bb.g;
       this.started=true;
       if(ctx.state==='suspended') ctx.resume().catch(()=>{});
@@ -476,9 +489,10 @@ const AudioSys={
   update(dt,p,racing){
     if(!this.started) return;
     const v=clamp(p.vs/33,0,1);
-    this.wind.gain.value = 0.02 + v*v*0.34;
-    this.windF.frequency.value = 300 + v*3200;
-    this.dirt.gain.value = (p.grounded&&!p.crashed&&racing) ? 0.03+v*0.20 : 0.0;
+    this.wind.gain.value = 0.014 + v*v*0.21;
+    this.windF.frequency.value = 260 + v*2700;
+    this.dirt.gain.value = (p.grounded&&!p.crashed&&racing) ? 0.03+v*0.20+p.driftT*0.28 : 0.0;
+    if(this.dirt.gain.value>0) this.dirtF&&(this.dirtF.frequency.value=240+p.driftT*650);
     this.boost.gain.value = p.boosting ? 0.35 : Math.max(0,this.boost.gain.value-dt*2);
     if(p.inp&&p.inp.pedal>0&&p.grounded&&p.vs<PEDAL_VMAX&&p.vs>0.5&&racing){
       this.pedalT-=dt; if(this.pedalT<=0){ this.pedalTick(); this.pedalT=0.5/(0.4+p.vs*0.12); }
@@ -507,6 +521,9 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='KeyZ'){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyX'){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyC'){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
+  else if((e.code==='KeyS'||e.code==='ArrowDown')&&player&&!player.grounded&&player.airTime>0.1){
+    pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); // pull back in the air to flip
+  }
   else if(e.code==='Enter') pressQueue.enter=true;
   else if(e.code==='KeyR'){ if(state!=='title') resetRace(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
@@ -542,6 +559,7 @@ function initTouch(){
   bind('tT1',()=>{ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); });
   bind('tT2',()=>{ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); });
   bind('tT3',()=>{ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); });
+  bind('tT4',()=>{ pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); });
   bind('tRestart',()=>{ if(state!=='title') resetRace(); });
   bind('tMute',()=>AudioSys.toggleMute());
   // boost is a latch on touch — thumbs are busy steering
@@ -928,7 +946,7 @@ function makeRider(def,idx){
     inp:{pedal:0,brake:0,steer:0,hop:false,boost:false,punch:false,trick:null},
     // physics
     s:0, lat:START_LATS[idx], y:0, vs:0, vlat:0, vy:0, grounded:true,
-    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false,
+    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0,
     // race
     finished:false, finishTime:null, racePos:idx+1, rubber:0,
     // trick/boost
@@ -965,7 +983,8 @@ function crashRider(r,cause){
     shake+=cause==='punched'?1.1:0.7;
     r.meter*=0.4;   // crashing dumps most of your adrenaline
     clearTouchBoost();
-    popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='bail'?'BAILED!':'CRASHED!','bad');
+    popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='bail'?'BAILED MID-TRICK!'
+      :cause==='hard'?'FLAT LANDING!':'CRASHED!','bad');
     if(cause==='punched'){ const f=document.getElementById('hitflash');
       f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
     AudioSys.crashSnd(1);
@@ -975,7 +994,10 @@ function crashRider(r,cause){
 function handleLanding(r,impact){
   const air=r.airTime;
   r.airTime=0; r.wasOnRamp=false;
-  if(r.trick){ crashRider(r,'bail'); return; }
+  if(r.trick){
+    if(r.trickT>=TRICKS[r.trick].dur*TRICK_FORGIVE) completeTrick(r); // close enough
+    else { crashRider(r,'bail'); return; }
+  }
   if(impact>CRASH_IMPACT){ crashRider(r,'hard'); return; }
   if(impact>STUMBLE_IMPACT){ r.vs*=0.72; if(r.isPlayer){ shake+=0.35; popup('SKETCHY!','small'); } }
   // clean landing: bank the tricks
@@ -995,18 +1017,19 @@ function startTrick(r,type){
   if(r.isPlayer) popup(TRICKS[type].name+'…','small');
   else STATS.aiTricks++;
 }
+function completeTrick(r){
+  const def=TRICKS[r.trick];
+  const bonus=r.chain>0?0.5:0;
+  r.pendingMeter+=def.meter*(1+bonus*r.chain);
+  r.pendingNames.push(def.name);
+  r.chain++;
+  r.trick=null; r.trickT=0;
+  if(r.isPlayer&&r.chain>1) popup('COMBO ×'+r.chain+'!','small');
+}
 function updateTrick(r,dt){
   if(!r.trick) return;
   r.trickT+=dt;
-  const def=TRICKS[r.trick];
-  if(r.trickT>=def.dur){
-    const bonus=r.chain>0?0.5:0;
-    r.pendingMeter+=def.meter*(1+bonus*r.chain);
-    r.pendingNames.push(def.name);
-    r.chain++;
-    r.trick=null; r.trickT=0;
-    if(r.isPlayer&&r.chain>1) popup('COMBO ×'+r.chain+'!','small');
-  }
+  if(r.trickT>=TRICKS[r.trick].dur) completeTrick(r);
 }
 function riderStep(r,dt){
   const inp=r.inp;
@@ -1055,9 +1078,14 @@ function riderStep(r,dt){
     const target=inp.steer;
     const rate=(Math.abs(target)>Math.abs(r.steerPos)&&Math.sign(target)===Math.sign(r.steerPos||target))?6:8;
     r.steerPos+=clamp(target-r.steerPos,-rate*dt,rate*dt);
-    const targetVlat=r.steerPos*(STEER_BASE+r.vs*STEER_VK);
+    // hold a hard turn at speed and the bike ramps into a slide: more lateral
+    // bite, visible oversteer, and some speed scrubbed off
+    const hardTurn=Math.abs(r.steerPos)>0.82&&r.vs>15;
+    r.driftT=clamp(r.driftT+(hardTurn?dt/0.45:-dt/0.3),0,1);
+    const targetVlat=r.steerPos*(STEER_BASE+r.vs*STEER_VK)*(1+DRIFT_AUTH*r.driftT);
     r.vlat+=(targetVlat-r.vlat)*Math.min(1,STEER_RESP*dt);
     r.vlat+=TMP_C.curv*r.vs*r.vs*CENTRIF_K*dt;      // drift to the outside of turns
+    r.vs=Math.max(0,r.vs-DRIFT_SCRUB*r.driftT*dt);
     // valley wall
     if(Math.abs(r.lat)>RIDE_W) r.vlat-=Math.sign(r.lat)*5*dt;
     // hop
@@ -1229,7 +1257,7 @@ function aiThink(r,dt){
     if(Math.random()<r.def.trick*2.6*dt){
       const rem=predictAirRemaining(r)-0.15;
       let pick=null;
-      for(const k of ['heel','superman','nohander']) if(TRICKS[k].dur<rem){ pick=k; break; }
+      for(const k of ['heel','backflip','superman','nohander']) if(TRICKS[k].dur<rem){ pick=k; break; }
       if(!pick&&Math.random()<r.def.crashy*0.5) pick='nohander';
       if(pick) startTrick(r,pick);
     }
@@ -1301,7 +1329,7 @@ function resetRace(){
     if(hudEls.dots) hudEls.dots[i].style.background='#'+r.color.toString(16).padStart(6,'0'); });
   for(const r of riders){
     r.s=0; r.lat=START_LATS[r.idx]; r.y=groundHeight(r.s,r.lat);
-    r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0;
+    r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
     r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
     r.meter=0; r.boosting=false; r.boostLatch=false;
@@ -1426,6 +1454,15 @@ function updateHud(){
   for(let i=0;i<riders.length;i++){
     hudEls.dots[i].style.top=(clamp(riders[i].s/FINISH_S,0,1)*100)+'%';
   }
+  // trick progress bar: red while bailing would crash, green once it counts
+  const tw=document.getElementById('trickWrap');
+  if(player.trick){
+    const def=TRICKS[player.trick];
+    tw.classList.remove('hidden');
+    const fill=document.getElementById('trickFill');
+    fill.style.width=(clamp(player.trickT/def.dur,0,1)*100).toFixed(0)+'%';
+    fill.classList.toggle('safe',player.trickT>=def.dur*TRICK_FORGIVE);
+  } else tw.classList.add('hidden');
   if(state==='racing'&&raceTime>9&&hudEls.hint.style.opacity!=='0') hudEls.hint.style.opacity='0';
   if(state==='countdown') hudEls.hint.style.opacity='1';
   if(IS_TOUCH) touchUIEl.classList.toggle('hidden',
@@ -1446,6 +1483,7 @@ function trickPose(type){
   switch(type){
     case 'nohander': return {tor:0.35, aLx:-2.5, aLz:0.95, aRx:-2.5, aRz:-0.95, lLx:-0.4, lRx:-0.4, pz:0, py:0};
     case 'superman': return {tor:0.55, aLx:-0.5, aLz:0.12, aRx:-0.5, aRz:-0.12, lLx:1.7, lRx:1.7, pz:-0.5, py:0.14};
+    case 'backflip': return {tor:1.05, aLx:-1.35, aLz:0.12, aRx:-1.35, aRz:-0.12, lLx:-1.0, lRx:-1.0, pz:0, py:-0.05};
     case 'heel':     return {tor:1.15, aLx:-1.2, aLz:0.12, aRx:-1.2, aRz:-0.12, lLx:-2.3, lRx:-2.3, pz:0.05, py:0.1};
   }
 }
@@ -1460,10 +1498,13 @@ function riderVisual(r,dt){
     pitchT=-Math.atan(slope);
   } else pitchT=clamp(-r.vy*0.05,-0.35,0.45);
   r.pitch=lerp(r.pitch,pitchT,Math.min(1,dt*8));
-  const leanT=r.crashed?0:clamp(r.steerPos*0.45+(r.vlat/Math.max(r.vs,5))*0.55,-0.65,0.65);
+  // backflip: full rotation over the trick, driven by raw progress so it
+  // always comes back around (2π ≡ 0 when it completes)
+  const flip=(r.trick==='backflip')?-Math.PI*2*clamp(r.trickT/TRICKS.backflip.dur,0,1):0;
+  const leanT=r.crashed?0:clamp(r.steerPos*(0.45+0.2*r.driftT)+(r.vlat/Math.max(r.vs,5))*0.55,-0.75,0.75);
   r.lean=lerp(r.lean,leanT,Math.min(1,dt*7));
-  const velYaw=r.crashed?0:clamp(r.vlat/Math.max(r.vs,4),-1,1)*-0.35;
-  v.root.rotation.set(r.pitch,c.h+velYaw,r.lean);
+  const velYaw=r.crashed?0:clamp(r.vlat/Math.max(r.vs,4),-1,1)*-0.35-r.steerPos*0.5*r.driftT;
+  v.root.rotation.set(r.pitch+flip,c.h+velYaw,r.lean);
   // wheels
   const wspin=r.vs/0.34*dt;
   v.wheelF.rotation.x+=wspin; v.wheelR.rotation.x+=wspin;
