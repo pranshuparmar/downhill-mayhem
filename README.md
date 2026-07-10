@@ -19,9 +19,13 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 ## Play it
 
-- **In your browser:** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
+- **In your browser (desktop or phone):** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
 - **Locally:** just double-click `index.html`. (It needs internet access once, to fetch
   the Three.js library from its CDN — everything else is inside the file.)
+
+📱 On phones and tablets, touch controls appear automatically: steer and brake with the
+left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
+boost is tap-to-toggle, and the game asks you to rotate to landscape.
 
 The whole game is a single self-contained `index.html` — no build step, no npm, no server.
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>DOWNHILL MAYHEM — free fan-made downhill racing tribute</title>
 <meta name="description" content="Free PS2-style downhill mountain-bike racing in your browser: 6 riders, big-air tricks that charge boost, and punches that settle the rest. No ads, no sign-up — press Enter and ride.">
 <meta property="og:title" content="DOWNHILL MAYHEM — free PS2-style downhill racing in your browser">
@@ -115,6 +115,55 @@
     background:radial-gradient(ellipse at center, rgba(255,40,20,.12) 30%, rgba(255,30,15,.5) 100%); }
   #hitflash.flash { animation:hitA .5s ease-out; }
   @keyframes hitA { 0%{opacity:1;} 100%{opacity:0;} }
+
+  /* ---- touch controls (shown only on coarse-pointer devices) ---- */
+  #touchUI { position:absolute; inset:0; z-index:4; pointer-events:none; font-style:normal; }
+  .tbtn { position:absolute; pointer-events:auto; display:flex; align-items:center; justify-content:center;
+    border:3px solid rgba(255,255,255,.85); border-radius:50%; background:rgba(10,14,22,.38);
+    color:#fff; font-weight:900; font-size:15px; line-height:1; text-align:center;
+    text-shadow:2px 2px 0 rgba(0,0,0,.8); box-shadow:3px 3px 0 rgba(0,0,0,.45);
+    touch-action:none; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; }
+  .tbtn.on, .tbtn:active { background:rgba(255,140,0,.6); border-color:#ffd23f; }
+  #tLeft  { left:calc(14px + env(safe-area-inset-left)); bottom:calc(16px + env(safe-area-inset-bottom)); width:86px; height:86px; font-size:34px; }
+  #tRight { left:calc(114px + env(safe-area-inset-left)); bottom:calc(16px + env(safe-area-inset-bottom)); width:86px; height:86px; font-size:34px; }
+  #tBrake { left:calc(58px + env(safe-area-inset-left)); bottom:calc(116px + env(safe-area-inset-bottom)); width:64px; height:64px; font-size:12px; }
+  #tJump  { right:calc(14px + env(safe-area-inset-right)); bottom:calc(16px + env(safe-area-inset-bottom)); width:92px; height:92px; }
+  #tPunch { right:calc(116px + env(safe-area-inset-right)); bottom:calc(14px + env(safe-area-inset-bottom)); width:66px; height:66px; font-size:26px; }
+  #tKick  { right:calc(190px + env(safe-area-inset-right)); bottom:calc(26px + env(safe-area-inset-bottom)); width:60px; height:60px; font-size:24px; }
+  #tBoost { right:calc(196px + env(safe-area-inset-right)); bottom:calc(100px + env(safe-area-inset-bottom)); width:74px; height:74px; font-size:14px; }
+  .tbtn.trick { width:56px; height:56px; font-size:10px; }
+  #tT1 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(122px + env(safe-area-inset-bottom)); }
+  #tT2 { right:calc(78px + env(safe-area-inset-right)); bottom:calc(134px + env(safe-area-inset-bottom)); }
+  #tT3 { right:calc(140px + env(safe-area-inset-right)); bottom:calc(122px + env(safe-area-inset-bottom)); }
+  .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
+  #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
+  #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
+
+  #rotate { position:absolute; inset:0; z-index:7; display:none; flex-direction:column; gap:8px;
+    align-items:center; justify-content:center; text-align:center; background:rgba(8,12,18,.88);
+    color:#ffd23f; font-style:italic; font-size:26px; pointer-events:none; text-shadow:3px 3px 0 #000; }
+  @media (orientation:portrait){ body.touch #rotate { display:flex; } }
+
+  /* ---- compact HUD on touch devices / small screens ---- */
+  body.touch #hint, body.touch #muteTag { display:none; }
+  body.touch #boostWrap { left:16px; top:84px; bottom:auto; width:150px; }
+  body.touch #boostLabel { font-size:11px; }
+  body.touch #boostBar { height:14px; border-width:2px; }
+  body.touch #speed { right:16px; top:64px; bottom:auto; }
+  body.touch #speed .num { font-size:44px; }
+  body.touch #speed .unit { font-size:13px; }
+  body.touch #prog { height:30vh; top:34%; right:8px; border-width:2px; }
+  body.touch #controls { display:none; }
+  @media (max-width:940px){
+    #pos .big { font-size:38px; } #pos .small { font-size:15px; }
+    #timer { font-size:20px; top:14px; }
+    #count { font-size:92px; }
+    .pop { font-size:27px; } .pop.pow { font-size:34px; } .pop.go { font-size:66px; }
+    #resTitle { font-size:32px; } #resTable { font-size:14px; } #resPanel { padding:14px 18px; }
+    #logo .l1 { font-size:min(11vw,64px); } #logo .l2 { font-size:min(14vw,84px); }
+    #tag { font-size:12px; padding:0 14px; } #pressEnter { font-size:20px; }
+    #foot { font-size:9px; }
+  }
 </style>
 </head>
 <body>
@@ -156,6 +205,22 @@
     <div id="pressEnter">PRESS ENTER</div>
     <div id="foot">Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · Three.js via CDN</div>
   </div>
+
+  <div id="touchUI" class="hidden">
+    <div class="tbtn" id="tLeft">◀</div>
+    <div class="tbtn" id="tRight">▶</div>
+    <div class="tbtn" id="tBrake">BRAKE</div>
+    <div class="tbtn" id="tJump">JUMP</div>
+    <div class="tbtn" id="tPunch">👊</div>
+    <div class="tbtn" id="tKick">🦶</div>
+    <div class="tbtn" id="tBoost">BOOST</div>
+    <div class="tbtn trick" id="tT1">NO<br>HAND</div>
+    <div class="tbtn trick" id="tT2">SUPER<br>MAN</div>
+    <div class="tbtn trick" id="tT3">HEEL<br>CLICK</div>
+    <div class="tbtn tiny" id="tMute">🔊</div>
+    <div class="tbtn tiny" id="tRestart">⟳</div>
+  </div>
+  <div id="rotate">🔄 ROTATE YOUR PHONE<br><span style="font-size:16px;color:#fff">mayhem needs landscape</span></div>
 
   <div id="results" class="hidden">
     <div id="resPanel">
@@ -423,7 +488,11 @@ const AudioSys={
 
 // ------------------------------------------------------------ input --------
 const keys={};
-const pressQueue={ hop:false, punch:false, kick:false, trick:null, enter:false };
+// action presses are buffered briefly (0.25 s) instead of dropped, so a tap a
+// frame early — e.g. mid micro-air over a roller — still lands
+const pressQueue={ hop:0, punch:0, kick:0, trick:null, trickAt:0, enter:false };
+const nowS=()=>performance.now()/1000;
+const fresh=(t)=>t>0&&nowS()-t<0.25;
 const KEYMAP={ KeyW:'pedal',ArrowUp:'pedal', KeyS:'brake',ArrowDown:'brake',
   KeyA:'left',ArrowLeft:'left', KeyD:'right',ArrowRight:'right',
   ShiftLeft:'boost',ShiftRight:'boost' };
@@ -432,12 +501,12 @@ window.addEventListener('keydown',e=>{
   AudioSys.ensure();
   const a=KEYMAP[e.code]; if(a) keys[a]=true;
   if(e.repeat) return;
-  if(e.code==='Space') pressQueue.hop=true;
-  else if(e.code==='KeyE') pressQueue.punch=true;
-  else if(e.code==='KeyF') pressQueue.kick=true;
-  else if(e.code==='KeyZ') pressQueue.trick='nohander';
-  else if(e.code==='KeyX') pressQueue.trick='superman';
-  else if(e.code==='KeyC') pressQueue.trick='heel';
+  if(e.code==='Space') pressQueue.hop=nowS();
+  else if(e.code==='KeyE') pressQueue.punch=nowS();
+  else if(e.code==='KeyF') pressQueue.kick=nowS();
+  else if(e.code==='KeyZ'){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
+  else if(e.code==='KeyX'){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
+  else if(e.code==='KeyC'){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
   else if(e.code==='Enter') pressQueue.enter=true;
   else if(e.code==='KeyR'){ if(state!=='title') resetRace(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
@@ -445,6 +514,56 @@ window.addEventListener('keydown',e=>{
     document.getElementById('vig').classList.toggle('off'); }
 });
 window.addEventListener('keyup',e=>{ const a=KEYMAP[e.code]; if(a) keys[a]=false; });
+
+// ---- touch controls (phones/tablets) ----
+const IS_TOUCH=(('ontouchstart' in window)||navigator.maxTouchPoints>0)&&matchMedia('(pointer:coarse)').matches;
+let tBoostEl=null,touchUIEl=null;
+function initTouch(){
+  if(!IS_TOUCH) return;
+  document.body.classList.add('touch');
+  touchUIEl=document.getElementById('touchUI');
+  document.getElementById('pressEnter').textContent='TAP TO START';
+  document.getElementById('tag').textContent='Steer with ◀ ▶ · JUMP off ramps · tricks in the air · BOOST burns the meter · settle it with 👊 and 🦶';
+  const bind=(id,on,off)=>{
+    const el=document.getElementById(id);
+    el.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
+      try{ el.setPointerCapture(e.pointerId); }catch(_){}
+      el.classList.add('on'); on(); });
+    const end=e=>{ el.classList.remove('on'); if(off) off(); };
+    el.addEventListener('pointerup',end); el.addEventListener('pointercancel',end);
+    el.addEventListener('contextmenu',e=>e.preventDefault());
+  };
+  bind('tLeft', ()=>keys.left=true,  ()=>keys.left=false);
+  bind('tRight',()=>keys.right=true, ()=>keys.right=false);
+  bind('tBrake',()=>keys.brake=true, ()=>keys.brake=false);
+  bind('tJump', ()=>{ pressQueue.hop=nowS(); });
+  bind('tPunch',()=>{ pressQueue.punch=nowS(); });
+  bind('tKick', ()=>{ pressQueue.kick=nowS(); });
+  bind('tT1',()=>{ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); });
+  bind('tT2',()=>{ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); });
+  bind('tT3',()=>{ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); });
+  bind('tRestart',()=>{ if(state!=='title') resetRace(); });
+  bind('tMute',()=>AudioSys.toggleMute());
+  // boost is a latch on touch — thumbs are busy steering
+  tBoostEl=document.getElementById('tBoost');
+  tBoostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
+    keys.boost=!keys.boost; tBoostEl.classList.toggle('on',keys.boost); });
+  tBoostEl.addEventListener('contextmenu',e=>e.preventDefault());
+  // tap anywhere: start from title / race again from results
+  window.addEventListener('pointerdown',()=>{ AudioSys.ensure();
+    if(state==='title'||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt)) pressQueue.enter=true; });
+  // best-effort fullscreen + landscape lock (Android; harmless elsewhere)
+  window.addEventListener('pointerdown',function once(){
+    try{
+      Promise.resolve(document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen())
+        .then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape'))
+        .catch(()=>{});
+    }catch(_){}
+  },{once:true});
+}
+function clearTouchBoost(){
+  if(IS_TOUCH&&keys.boost){ keys.boost=false; if(tBoostEl) tBoostEl.classList.remove('on'); }
+}
 
 // ------------------------------------------------------------ three --------
 let renderer,scene,camera,fxCanvas,fxCtx;
@@ -845,6 +964,7 @@ function crashRider(r,cause){
   if(r.isPlayer){
     shake+=cause==='punched'?1.1:0.7;
     r.meter*=0.4;   // crashing dumps most of your adrenaline
+    clearTouchBoost();
     popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='bail'?'BAILED!':'CRASHED!','bad');
     if(cause==='punched'){ const f=document.getElementById('hitflash');
       f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
@@ -1147,21 +1267,26 @@ function aiThink(r,dt){
 function playerInput(){
   const inp=player.inp;
   const active=(state==='racing')&&!player.crashed&&!player.finished;
-  inp.pedal=active&&keys.pedal?1:0;
+  if(IS_TOUCH&&keys.boost&&player.meter<=0) clearTouchBoost(); // latch releases when dry
+  inp.pedal=active&&(keys.pedal||IS_TOUCH)?1:0; // auto-pedal on touch
   inp.brake=active&&keys.brake?1:0;
   inp.steer=active?((keys.right?1:0)-(keys.left?1:0)):0;
   inp.boost=active&&!!keys.boost;
-  inp.hop=active&&pressQueue.hop;
-  inp.trick=active?pressQueue.trick:null;
-  if(active&&pressQueue.punch&&player.punchCd<=0&&player.grounded){
-    player.punchCd=PLAYER_PUNCH_CD; tryStrike(player,'punch');
+  // buffered actions: consume on success, keep (until expiry) otherwise
+  inp.hop=active&&fresh(pressQueue.hop);
+  if(inp.hop&&player.grounded) pressQueue.hop=0;
+  inp.trick=active&&fresh(pressQueue.trickAt)?pressQueue.trick:null;
+  if(active&&fresh(pressQueue.punch)&&player.punchCd<=0&&player.grounded){
+    pressQueue.punch=0; player.punchCd=PLAYER_PUNCH_CD; tryStrike(player,'punch');
   }
-  if(active&&pressQueue.kick&&player.punchCd<=0){   // kicks work mid-air too
-    player.punchCd=PLAYER_PUNCH_CD; tryStrike(player,'kick');
+  if(active&&fresh(pressQueue.kick)&&player.punchCd<=0){   // kicks work mid-air too
+    pressQueue.kick=0; player.punchCd=PLAYER_PUNCH_CD; tryStrike(player,'kick');
   }
-  if(active&&inp.trick) startTrick(player,inp.trick);
+  if(active&&inp.trick){
+    startTrick(player,inp.trick);
+    if(player.trick===inp.trick){ pressQueue.trick=null; pressQueue.trickAt=0; }
+  }
   if(player.finished){ inp.pedal=0; inp.steer=0; inp.brake=player.s>FINISH_S+25?1:0.25; player.inp.boost=false; }
-  pressQueue.hop=false; pressQueue.punch=false; pressQueue.kick=false; pressQueue.trick=null;
 }
 
 // ------------------------------------------------------------ race flow ----
@@ -1303,6 +1428,8 @@ function updateHud(){
   }
   if(state==='racing'&&raceTime>9&&hudEls.hint.style.opacity!=='0') hudEls.hint.style.opacity='0';
   if(state==='countdown') hudEls.hint.style.opacity='1';
+  if(IS_TOUCH) touchUIEl.classList.toggle('hidden',
+    state==='title'||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt));
 }
 function popup(text,cls){
   if(FAST) return;
@@ -1500,6 +1627,7 @@ function boot(){
   buildWorld();
   makeRiders();
   initHud();
+  initTouch();
   // place riders at the gate for the title backdrop
   for(const r of riders){ r.y=groundHeight(r.s,r.lat); riderVisual(r,0.016); }
   state='title';
