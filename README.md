@@ -51,9 +51,17 @@ Start a trick in the air and *land after its bar fills* to bank boost meter; lan
 and you eat dirt. Chain tricks in one jump for bonus meter, and clean riding trickles
 meter in on its own — crashing dumps most of it. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
-lines. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
+lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
+slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
 land a mid-air kick for an AIR STRIKE bonus. Races are decided in the final third;
 rubber-banding keeps the pack honest. Riders get fresh jersey colours every race.
+
+**Chasing the mountain:** it's the same course every run, and the game remembers your
+best time (stored locally in your browser — still no accounts, nothing leaves your
+machine). Beat it for the NEW PERSONAL BEST fanfare. The HUD shows the live gap to the
+rider ahead, every overtake pops on screen, and the results table ends with your run's
+stats — top speed, biggest air, tricks, best combo, riders decked. Restarts after the
+first race use a shortened countdown, so the next attempt is always seconds away.
 
 ## Tech notes
 
@@ -70,3 +78,4 @@ rubber-banding keeps the pack honest. Riders get fresh jersey colours every race
   aggressive distance fog, instanced pine trees and boulders, blob shadows, and an
   optional CRT scanline overlay.
 - Zero accounts, zero ads, zero analytics, zero external calls beyond the Three.js CDN.
+  Your best time lives in a single `localStorage` key on your own machine.

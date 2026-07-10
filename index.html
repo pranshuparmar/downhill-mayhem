@@ -40,6 +40,8 @@
   #pos { position:absolute; top:18px; left:22px; line-height:.9; }
   #pos .big { font-size:56px; color:#ffd23f; letter-spacing:-2px; }
   #pos .small { font-size:20px; color:#fff; }
+  #gap { position:absolute; top:80px; left:24px; font-size:16px; color:#fff; }
+  #gap b { color:#ffd23f; }
 
   #timer { position:absolute; top:18px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:30px; letter-spacing:1px; }
 
@@ -68,6 +70,9 @@
   .pop.bad { color:#ff5040; }
   .pop.pow { color:#fff; font-size:52px; }
   .pop.go { color:#59ff7a; font-size:110px; }
+  .pop.up { color:#59ff7a; font-size:36px; }
+  .pop.down { color:#ff6a5a; font-size:30px; }
+  .pop.pb { color:#ffd23f; font-size:48px; }
   @keyframes popA { 0%{opacity:0; transform:skewX(-8deg) scale(.4);} 12%{opacity:1; transform:skewX(-8deg) scale(1.12);}
     24%{transform:skewX(-8deg) scale(1);} 70%{opacity:1;} 100%{opacity:0; transform:skewX(-8deg) scale(1) translateY(-46px);} }
 
@@ -93,6 +98,7 @@
   #logo .l2 { font-size:min(14vw,120px); color:#ffd23f;
     text-shadow:3px 3px 0 #a33, 7px 7px 0 rgba(0,0,0,.9); }
   #tag { margin-top:14px; font-size:15px; font-style:italic; color:#cfe; text-shadow:2px 2px 0 #000; }
+  #bestLine { margin-top:8px; font-size:17px; font-style:italic; color:#ffd23f; text-shadow:2px 2px 0 #000; letter-spacing:1px; }
   #controls { margin-top:26px; display:grid; grid-template-columns:auto auto; gap:4px 18px; font-size:14px;
     font-style:normal; text-align:left; background:rgba(0,0,0,.5); padding:14px 22px; border:2px solid rgba(255,255,255,.25); }
   #controls b { color:#ffd23f; font-style:italic; }
@@ -107,7 +113,8 @@
     justify-content:center; color:#fff; background:rgba(5,8,14,.45); }
   #resPanel { background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); }
   #resTitle { font-style:italic; font-size:44px; color:#ffd23f; text-shadow:3px 3px 0 #000; text-align:center; letter-spacing:1px; }
-  #resSub { text-align:center; font-size:15px; margin:2px 0 14px; color:#9fd; font-style:italic; }
+  #resSub { text-align:center; font-size:15px; margin:2px 0 4px; color:#9fd; font-style:italic; }
+  #resStats { text-align:center; font-size:12px; margin:0 0 12px; color:#ffd23f; font-style:italic; letter-spacing:.5px; }
   #resTable { width:100%; border-collapse:collapse; font-size:17px; }
   #resTable td { padding:5px 10px; border-bottom:1px solid rgba(255,255,255,.18); font-style:italic; }
   #resTable tr.me td { color:#ffd23f; background:rgba(255,210,63,.12); }
@@ -153,7 +160,8 @@
 
   /* ---- compact HUD on touch devices / small screens ---- */
   body.touch #hint, body.touch #muteTag { display:none; }
-  body.touch #boostWrap { left:16px; top:84px; bottom:auto; width:150px; }
+  body.touch #gap { top:66px; left:18px; font-size:13px; }
+  body.touch #boostWrap { left:16px; top:94px; bottom:auto; width:150px; }
   body.touch #boostLabel { font-size:11px; }
   body.touch #boostBar { height:14px; border-width:2px; }
   body.touch #speed { right:16px; top:64px; bottom:auto; }
@@ -182,6 +190,7 @@
 
   <div id="hud" class="hidden">
     <div id="pos"><span class="big">6th</span><span class="small"> /6</span></div>
+    <div id="gap"></div>
     <div id="timer">0:00.00</div>
     <div id="speed"><span class="num">0</span><br><span class="unit">km/h</span></div>
     <div id="boostWrap">
@@ -199,6 +208,7 @@
   <div id="title">
     <div id="logo"><div class="l1">DOWNHILL</div><div class="l2">MAYHEM</div></div>
     <div id="tag">Race 5 rivals down two kilometres of mountain. Tricks charge your boost. Fists settle the rest.</div>
+    <div id="bestLine"></div>
     <div id="controls">
       <span><b>W / ↑</b></span><span>Pedal</span>
       <span><b>S / ↓</b></span><span>Brake</span>
@@ -236,6 +246,7 @@
     <div id="resPanel">
       <div id="resTitle">RESULTS</div>
       <div id="resSub"></div>
+      <div id="resStats"></div>
       <table id="resTable"></table>
       <div id="resAgain">PRESS R TO RACE AGAIN</div>
     </div>
@@ -483,7 +494,10 @@ const AudioSys={
   strikeLand(vol){ this.thump(85,0.22,0.95*vol); this.noiseHit(700,0.12,0.5*vol); this.noiseHit(1400,0.05,0.3*vol); },
   crashSnd(vol){ this.thump(70,0.35,0.9*vol); this.noiseHit(500,0.3,0.5*vol); this.noiseHit(2200,0.12,0.25*vol); },
   chime(){ this.blip(880,0.09,0.25,'triangle'); setTimeout(()=>this.blip(1320,0.14,0.28,'triangle'),70); },
-  jingle(){ const n=[523,659,784,1046]; n.forEach((f,i)=>setTimeout(()=>this.blip(f,0.16,0.3,'square'),i*130)); },
+  jingle(pb){ const n=pb?[523,659,784,1046,1318,1568]:[523,659,784,1046];
+    n.forEach((f,i)=>setTimeout(()=>this.blip(f,0.16,0.3,'square'),i*(pb?105:130))); },
+  posUp(){ this.blip(620,0.06,0.2,'square'); setTimeout(()=>this.blip(930,0.08,0.22,'square'),70); },
+  posDown(){ this.blip(520,0.06,0.18,'square'); setTimeout(()=>this.blip(350,0.09,0.2,'square'),70); },
   countBeep(go){ this.blip(go?900:600, go?0.4:0.12, 0.35,'square'); },
   hopSnd(){ this.noiseHit(700,0.08,0.18); },
   pedalTick(){ this.blip(2200,0.015,0.06,'square'); },
@@ -1004,6 +1018,11 @@ function handleLanding(r,impact){
   // clean landing: bank the tricks
   let gain=r.pendingMeter;
   if(air>BIGAIR_T) gain+=BIGAIR_METER;
+  if(r.isPlayer){
+    RACE_STATS.biggestAir=Math.max(RACE_STATS.biggestAir,air);
+    RACE_STATS.tricksLanded+=r.pendingNames.length;
+    RACE_STATS.bestCombo=Math.max(RACE_STATS.bestCombo,r.chain);
+  }
   if(gain>0&&r.isPlayer){
     r.meter=clamp(r.meter+gain,0,100);
     const names=r.pendingNames.length?r.pendingNames.join(' + '):'BIG AIR';
@@ -1025,7 +1044,10 @@ function completeTrick(r){
   r.pendingNames.push(def.name);
   r.chain++;
   r.trick=null; r.trickT=0;
-  if(r.isPlayer&&r.chain>1) popup('COMBO ×'+r.chain+'!','small');
+  if(r.isPlayer){
+    AudioSys.blip(640*Math.pow(1.13,r.chain),0.07,0.22,'triangle'); // chains climb in pitch
+    if(r.chain>1) popup('COMBO ×'+r.chain+'!','small');
+  }
 }
 function updateTrick(r,dt){
   if(!r.trick) return;
@@ -1183,6 +1205,8 @@ function tryStrike(attacker,kind){
     const side=Math.sign(best.lat-attacker.lat)||1;
     best.vlat+=side*(kind==='kick'?4.5:3);
     crashRider(best,'punched');
+    if(attacker.isPlayer||best.isPlayer) hitStopT=0.075;  // a landed hit crunches time
+    if(attacker.isPlayer) RACE_STATS.decked++;
     if(nearPlayer||best.isPlayer) AudioSys.strikeLand(attacker.isPlayer||best.isPlayer?1:0.5);
     if(attacker.isPlayer){
       const air=!attacker.grounded;
@@ -1333,6 +1357,13 @@ function playerInput(){
 // ------------------------------------------------------------ race flow ----
 let state='boot', countT=0, raceTime=0, gameTime=0, shake=0, fps=60, FAST=false;
 let lastCountDigit=-1, resultsShownAt=-1;
+let racesRun=0, countDur=3.8, prevPlayerPos=0, posPopupCd=0, hitStopT=0;
+// per-race player stats (results screen) + all-time bests (one local key)
+const RACE_STATS={ topSpeed:0, biggestAir:0, tricksLanded:0, decked:0, bestCombo:0 };
+const SAVE_KEY='downhill-mayhem-best';
+let BEST={};
+try{ BEST=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')||{}; }catch(e){ BEST={}; }
+function saveBest(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(BEST)); }catch(e){} }
 
 function resetRace(){
   // fresh jersey colours every race
@@ -1353,6 +1384,10 @@ function resetRace(){
     r.viz.bike.rotation.set(0,0,0); r.viz.person.visible=true;
   }
   raceTime=0; countT=0; lastCountDigit=-1; resultsShownAt=-1; shake=0;
+  countDur=racesRun===0?3.8:2.0; racesRun++;   // full ceremony once, quick re-entry after
+  prevPlayerPos=0; posPopupCd=0; hitStopT=0;
+  RACE_STATS.topSpeed=0; RACE_STATS.biggestAir=0; RACE_STATS.tricksLanded=0;
+  RACE_STATS.decked=0; RACE_STATS.bestCombo=0;
   document.getElementById('popups').innerHTML='';
   document.getElementById('results').classList.add('hidden');
   document.getElementById('title').classList.add('hidden');
@@ -1364,9 +1399,18 @@ function finishRider(r){
   r.finished=true; r.finishTime=raceTime;
   if(r.isPlayer){
     state='finished';
-    AudioSys.jingle();
+    const newPB=!BEST.time||r.finishTime<BEST.time;
+    if(newPB) BEST.time=r.finishTime;
+    BEST.topSpeed=Math.max(BEST.topSpeed||0,RACE_STATS.topSpeed);
+    BEST.biggestAir=Math.max(BEST.biggestAir||0,RACE_STATS.biggestAir);
+    BEST.bestCombo=Math.max(BEST.bestCombo||0,RACE_STATS.bestCombo);
+    BEST.decked=Math.max(BEST.decked||0,RACE_STATS.decked);
+    saveBest();
+    AudioSys.jingle(newPB);
     const place=riders.filter(o=>o.finished&&o.finishTime<=r.finishTime).length;
     popup(ordinal(place)+' PLACE!','');
+    if(newPB) setTimeout(()=>popup('NEW PERSONAL BEST!','pb'),650);
+    r.newPB=newPB;
   }
 }
 function updatePositions(){
@@ -1381,7 +1425,7 @@ function updateRace(dt){
   gameTime+=dt;
   if(state==='countdown'){
     countT+=dt;
-    const remain=3.8-countT;
+    const remain=countDur-countT;
     const el=document.getElementById('count');
     if(remain>0){
       if(remain<=3){
@@ -1404,6 +1448,20 @@ function updateRace(dt){
     for(let k=0;k<sub;k++) for(const r of riders) riderStep(r,h);
     pairCollisions(dt);
     updatePositions();
+    // surface the race drama: every overtake (or lost place) pops
+    posPopupCd-=dt;
+    if(state==='racing'){
+      RACE_STATS.topSpeed=Math.max(RACE_STATS.topSpeed,player.vs*3.6);
+      const pos=player.racePos;
+      if(pos!==prevPlayerPos){
+        if(prevPlayerPos>0&&raceTime>3&&posPopupCd<=0&&!player.finished){
+          if(pos<prevPlayerPos){ popup('▲ '+ordinal(pos),'up'); AudioSys.posUp(); }
+          else { popup('▼ '+ordinal(pos),'down'); AudioSys.posDown(); }
+          posPopupCd=1.5;
+        }
+        prevPlayerPos=pos;
+      }
+    }
     // force-finish stragglers long after the player is done
     if(state==='finished'&&player.finishTime!=null&&raceTime>player.finishTime+45){
       for(const r of riders) if(!r.finished){ r.finished=true; r.finishTime=raceTime; }
@@ -1436,7 +1494,12 @@ function showResults(){
   });
   document.getElementById('resTable').innerHTML=html;
   const place=player.racePos;
-  document.getElementById('resSub').textContent='You finished '+ordinal(place)+' — '+fmtTime(player.finishTime);
+  let sub='You finished '+ordinal(place)+' — '+fmtTime(player.finishTime);
+  if(player.finished) sub+=player.newPB?' · NEW BEST!':(BEST.time?' · best '+fmtTime(BEST.time):'');
+  document.getElementById('resSub').textContent=sub;
+  document.getElementById('resStats').textContent=
+    'TOP '+Math.round(RACE_STATS.topSpeed)+' km/h · AIR '+RACE_STATS.biggestAir.toFixed(1)+'s · TRICKS '
+    +RACE_STATS.tricksLanded+' · COMBO ×'+RACE_STATS.bestCombo+' · DECKED '+RACE_STATS.decked;
 }
 
 // ------------------------------------------------------------ HUD ----------
@@ -1462,6 +1525,19 @@ function updateHud(){
   if(pt!==lastPosTxt){ lastPosTxt=pt; hudEls.posBig.textContent=pt; }
   const tt=fmtTime(player.finished?player.finishTime:(state==='racing'||state==='finished')?raceTime:0);
   if(tt!==lastTimeTxt){ lastTimeTxt=tt; hudEls.timer.textContent=tt; }
+  // gap to the rider ahead (or your lead when 1st) — the "almost got him" readout
+  const gapEl=document.getElementById('gap');
+  if(state==='racing'&&!player.finished&&raceTime>2){
+    let txt='';
+    if(player.racePos>1){
+      const ahead=riders.find(o=>o.racePos===player.racePos-1);
+      if(ahead) txt='▲ '+ahead.def.name+' <b>+'+Math.max(0,(ahead.s-player.s)/Math.max(player.vs,8)).toFixed(1)+'s</b>';
+    } else {
+      const chaser=riders.find(o=>o.racePos===2);
+      if(chaser) txt='▼ '+chaser.def.name+' <b>+'+Math.max(0,(player.s-chaser.s)/Math.max(chaser.vs,8)).toFixed(1)+'s</b>';
+    }
+    if(gapEl.innerHTML!==txt) gapEl.innerHTML=txt;
+  } else if(gapEl.innerHTML!=='') gapEl.innerHTML='';
   hudEls.boostFill.style.width=player.meter.toFixed(0)+'%';
   hudEls.boostBar.classList.toggle('full',player.meter>=99);
   for(let i=0;i<riders.length;i++){
@@ -1657,12 +1733,15 @@ function frame(now){
   let dt=Math.min((now-lastT)/1000,0.05); lastT=now;
   if(dt<=0) dt=0.0001;
   fps=lerp(fps,1/dt,0.04);
-  simFrame(dt);
-  for(const r of riders) riderVisual(r,dt);
-  updateCamera(dt);
+  // hit-stop: landed strikes freeze the world for a beat
+  let simDt=dt;
+  if(hitStopT>0){ hitStopT-=dt; simDt=dt*0.08; }
+  simFrame(simDt);
+  for(const r of riders) riderVisual(r,simDt);
+  updateCamera(simDt);
   updateHud();
   drawFx();
-  AudioSys.update(dt,player,state==='racing'||state==='finished');
+  AudioSys.update(simDt,player,state==='racing'||state==='finished');
   renderer.render(scene,camera);
 }
 
@@ -1684,6 +1763,7 @@ function boot(){
   initTouch();
   // place riders at the gate for the title backdrop
   for(const r of riders){ r.y=groundHeight(r.s,r.lat); riderVisual(r,0.016); }
+  if(BEST.time) document.getElementById('bestLine').textContent='YOUR BEST · '+fmtTime(BEST.time);
   state='title';
   requestAnimationFrame(frame);
   console.log('%cDOWNHILL MAYHEM','font:italic 900 22px Arial;color:#ffd23f;',
@@ -1696,6 +1776,8 @@ window.GAME={
   riders, get player(){ return player; }, FINISH_S,
   get renderInfo(){ const i=renderer.info.render; return { calls:i.calls, triangles:i.triangles }; },
   get ramps(){ return ramps; }, get scene(){ return scene; }, stats:STATS,
+  get best(){ return BEST; }, raceStats:RACE_STATS,
+  get hitStopT(){ return hitStopT; }, get countdownDur(){ return countDur; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
