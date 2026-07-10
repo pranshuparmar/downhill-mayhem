@@ -19,9 +19,14 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 ## Play it
 
-- **In your browser:** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
+- **In your browser (desktop or phone):** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
+- **On itch.io:** [pranshuparmar.itch.io/downhill-mayhem](https://pranshuparmar.itch.io/downhill-mayhem)
 - **Locally:** just double-click `index.html`. (It needs internet access once, to fetch
   the Three.js library from its CDN — everything else is inside the file.)
+
+📱 On phones and tablets, touch controls appear automatically: steer and brake with the
+left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
+boost is tap-to-toggle, and the game asks you to rotate to landscape.
 
 The whole game is a single self-contained `index.html` — no build step, no npm, no server.
 
@@ -30,8 +35,8 @@ The whole game is a single self-contained `index.html` — no build step, no npm
 | Input | Action |
 |---|---|
 | `↑` / `W` | Pedal |
-| `↓` / `S` | Brake |
-| `←` `→` / `A` `D` | Steer |
+| `↓` / `S` | Brake — or **Backflip** while airborne |
+| `←` `→` / `A` `D` | Steer — hold a hard turn at speed to break into a slide |
 | `Space` | Bunny hop — hop right at a ramp lip for bonus air |
 | `Z` `X` `C` | Tricks while airborne: No Hander / Superman / Heel Clicker |
 | `Shift` | Boost (drains the meter) |
@@ -43,13 +48,21 @@ The whole game is a single self-contained `index.html` — no build step, no npm
 
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
-Start a trick in the air and *land after it finishes* to bank boost meter; land mid-trick
+Start a trick in the air and *land after its bar fills* to bank boost meter; land mid-trick
 and you eat dirt. Chain tricks in one jump for bonus meter, and clean riding trickles
 meter in on its own — crashing dumps most of it. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
-lines. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
+lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
+slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
 land a mid-air kick for an AIR STRIKE bonus. Races are decided in the final third;
 rubber-banding keeps the pack honest. Riders get fresh jersey colours every race.
+
+**Chasing the mountain:** it's the same course every run, and the game remembers your
+best time (stored locally in your browser — still no accounts, nothing leaves your
+machine). Beat it for the NEW PERSONAL BEST fanfare. The HUD shows the live gap to the
+rider ahead, every overtake pops on screen, and the results table ends with your run's
+stats — top speed, biggest air, tricks, best combo, riders decked. Restarts after the
+first race use a shortened countdown, so the next attempt is always seconds away.
 
 ## Tech notes
 
@@ -66,3 +79,4 @@ rubber-banding keeps the pack honest. Riders get fresh jersey colours every race
   aggressive distance fog, instanced pine trees and boulders, blob shadows, and an
   optional CRT scanline overlay.
 - Zero accounts, zero ads, zero analytics, zero external calls beyond the Three.js CDN.
+  Your best time lives in a single `localStorage` key on your own machine.
