@@ -280,7 +280,8 @@ const LAT_CLAMP=27.5;                      // valley wall
 const G=11.5;                              // arcade gravity
 const DRAG=0.0030, SOFTCAP_V=33, SLOPE_K=1.48;
 const PEDAL_A=5.8, PEDAL_VMAX=18, BRAKE_A=10.5, ROLL_F=0.35;
-const STEER_BASE=2.6, STEER_VK=0.21, STEER_RESP=7.5, CENTRIF_K=0.72, AIR_CTRL=0.32;
+const STEER_BASE=2.6, STEER_VK=0.21, STEER_RESP=7.5, CENTRIF_K=1.35, AIR_CTRL=0.32;
+const WALL_GRIND_T=0.8, WALL_SLAM_V=5.0;   // the valley wall is a hazard, not a guard rail
 const DRIFT_AUTH=0.55, DRIFT_SCRUB=1.3;    // hard sustained cornering breaks into a slide
 const HOP_VY=3.3, RAMP_HOP_BONUS=1.9, DETACH_G=2.6;
 const STUMBLE_IMPACT=9.5, CRASH_IMPACT=14.5, CRASH_TIME=1.8, INVULN_TIME=2.6;
@@ -946,7 +947,7 @@ function makeRider(def,idx){
     inp:{pedal:0,brake:0,steer:0,hop:false,boost:false,punch:false,trick:null},
     // physics
     s:0, lat:START_LATS[idx], y:0, vs:0, vlat:0, vy:0, grounded:true,
-    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0,
+    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0, wallT:0,
     // race
     finished:false, finishTime:null, racePos:idx+1, rubber:0,
     // trick/boost
@@ -984,7 +985,7 @@ function crashRider(r,cause){
     r.meter*=0.4;   // crashing dumps most of your adrenaline
     clearTouchBoost();
     popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='bail'?'BAILED MID-TRICK!'
-      :cause==='hard'?'FLAT LANDING!':'CRASHED!','bad');
+      :cause==='hard'?'FLAT LANDING!':cause==='wall'?'INTO THE WALL!':'CRASHED!','bad');
     if(cause==='punched'){ const f=document.getElementById('hitflash');
       f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
     AudioSys.crashSnd(1);
@@ -1060,9 +1061,9 @@ function riderStep(r,dt){
     let a=-TMP_C.grade*9.81*SLOPE_K*(1+r.rubber*0.5);
     a+=inp.pedal*PEDAL_A*Math.max(0,1-r.vs/PEDAL_VMAX)*(1+r.rubber*0.6);
     a-=inp.brake*BRAKE_A;
-    const dragMult=zone===0?1:(zone===1?1.55:4.2);
+    const dragMult=zone===0?1:(zone===1?1.55:5.5);
     a-=DRAG*dragMult*r.vs*r.vs*(1-r.rubber*0.55);
-    a-=zone===0?ROLL_F:(zone===1?1.1:3.0);
+    a-=zone===0?ROLL_F:(zone===1?1.1:3.4);
     // boost (latch: engage above BOOST_MIN, then drain to zero)
     if(!inp.boost||r.meter<=0) r.boostLatch=false;
     else if(r.meter>BOOST_MIN) r.boostLatch=true;
@@ -1082,9 +1083,11 @@ function riderStep(r,dt){
     // bite, visible oversteer, and some speed scrubbed off
     const hardTurn=Math.abs(r.steerPos)>0.82&&r.vs>15;
     r.driftT=clamp(r.driftT+(hardTurn?dt/0.45:-dt/0.3),0,1);
-    const targetVlat=r.steerPos*(STEER_BASE+r.vs*STEER_VK)*(1+DRIFT_AUTH*r.driftT);
+    // corners throw you outward: the UNSTEERED equilibrium in a turn is a real
+    // outward slide (curv·v²), so holding a line always takes counter-steering
+    const centrif=TMP_C.curv*r.vs*r.vs*CENTRIF_K;
+    const targetVlat=r.steerPos*(STEER_BASE+r.vs*STEER_VK)*(1+DRIFT_AUTH*r.driftT)+centrif;
     r.vlat+=(targetVlat-r.vlat)*Math.min(1,STEER_RESP*dt);
-    r.vlat+=TMP_C.curv*r.vs*r.vs*CENTRIF_K*dt;      // drift to the outside of turns
     r.vs=Math.max(0,r.vs-DRIFT_SCRUB*r.driftT*dt);
     // valley wall
     if(Math.abs(r.lat)>RIDE_W) r.vlat-=Math.sign(r.lat)*5*dt;
@@ -1112,8 +1115,17 @@ function riderStep(r,dt){
   // --- integrate & ground interaction ---
   const prevY=r.y, prevVy=r.vy;
   r.s+=r.vs*dt;
+  const vlatIn=r.vlat;
   r.lat=clamp(r.lat+r.vlat*dt,-LAT_CLAMP,LAT_CLAMP);
-  if(Math.abs(r.lat)>=LAT_CLAMP-0.01){ r.vlat*=-0.35; r.vs*=0.985; if(r.isPlayer) shake+=0.06; }
+  if(Math.abs(r.lat)>=LAT_CLAMP-0.01){
+    if(Math.abs(vlatIn)>WALL_SLAM_V&&r.grounded){ crashRider(r,'wall'); }
+    r.vlat*=-0.35; r.vs*=0.985; if(r.isPlayer) shake+=0.06;
+  }
+  // grinding along the valley wall ends in the dirt — it is not a racing line
+  if(r.grounded&&!r.crashed&&Math.abs(r.lat)>RIDE_W+0.4&&r.vs>7){
+    r.wallT+=dt;
+    if(r.wallT>WALL_GRIND_T) crashRider(r,'wall');
+  } else r.wallT=0;
   if(r.s>S_MAX-60){ r.s=S_MAX-60; r.vs=0; }
   const gnd=groundHeight(r.s,r.lat);
   if(r.grounded){
@@ -1214,14 +1226,15 @@ function aiThink(r,dt){
   if(r.reactT>0){ r.reactT-=dt; return; }
   if(r.crashed) return;
 
-  // rubber-band vs player
+  // rubber-band vs player: full help catching up, only a light leash on
+  // leaders — nobody waits for a rider who isn't racing
   const gap=player.s-r.s;
-  r.rubber=clamp(gap/160,-1,1)*0.15;
+  r.rubber=gap>=0?clamp(gap/160,0,1)*0.15:clamp(gap/160,-1,0)*0.055;
 
   // corner speed management
   const look=16+r.vs*0.9;
   const cAhead=sampleTrack(r.s+look,TMP_C).curv;
-  const maxV=Math.sqrt(4.2*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
+  const maxV=Math.sqrt(3.5*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
   inp.brake=r.vs>maxV*1.03?1:0;
   inp.pedal=inp.brake?0:1;
 
@@ -1329,7 +1342,7 @@ function resetRace(){
     if(hudEls.dots) hudEls.dots[i].style.background='#'+r.color.toString(16).padStart(6,'0'); });
   for(const r of riders){
     r.s=0; r.lat=START_LATS[r.idx]; r.y=groundHeight(r.s,r.lat);
-    r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0;
+    r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0; r.wallT=0;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
     r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
     r.meter=0; r.boosting=false; r.boostLatch=false;
