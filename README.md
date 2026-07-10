@@ -4,6 +4,14 @@ A **free, browser-playable, fan-made tribute** to *Downhill Domination* (PS2, 20
 one long point-to-point race down a mountain against 5 AI rivals, with mid-air tricks
 that charge a boost meter and fists (and boots) that settle position disputes.
 
+<p align="center">
+  <a href="https://pranshuparmar.github.io/downhill-mayhem/">
+    <img src="media/demo.gif" alt="Ten seconds of DOWNHILL MAYHEM: hitting a ramp, throwing a Superman, boosting, and punching a rival off their bike" width="600">
+  </a>
+  <br>
+  <b><a href="https://pranshuparmar.github.io/downhill-mayhem/">▶ PLAY NOW — free, in your browser</a></b>
+</p>
+
 > Fan-made tribute. **Not affiliated with Sony** or the original developers.
 > No original game assets are used: every model is built from Three.js primitives,
 > every texture is canvas-generated, and every sound is synthesized at runtime with
