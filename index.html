@@ -585,8 +585,10 @@ const AudioSys={
   update(dt,p,racing){
     if(!this.started) return;
     const v=clamp(p.vs/33,0,1);
-    this.wind.gain.value = 0.014 + v*v*0.21;
-    this.windF.frequency.value = 260 + v*2700 + p.draftT*380;
+    // wind is speed feedback, not the lead instrument — duck it under the music
+    const duck=this.music.on?0.55:1;
+    this.wind.gain.value = (0.012 + v*v*0.14)*duck;
+    this.windF.frequency.value = 260 + v*2100 + p.draftT*380;
     this.intense = racing&&!p.finished&&p.s>FINISH_S-400;
     this.dirt.gain.value = (p.grounded&&!p.crashed&&racing) ? 0.03+v*0.20+p.driftT*0.28 : 0.0;
     if(this.dirt.gain.value>0) this.dirtF&&(this.dirtF.frequency.value=240+p.driftT*650);
@@ -2211,6 +2213,7 @@ window.GAME={
   get mode(){ return MODE; }, get seed(){ return CUR_SEED; }, get demo(){ return DEMO; },
   audioState(){ return AudioSys.ctx?AudioSys.ctx.state:'none'; },
   get musicOn(){ return AudioSys.music.on; },
+  get windGain(){ return AudioSys.wind?AudioSys.wind.gain.value:0; },
   get ghostSamples(){ return ghostData?Math.floor(ghostData.length/3):0; },
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
