@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>DOWNHILL MAYHEM — free fan-made downhill racing tribute</title>
 <meta name="description" content="Free PS2-style downhill mountain-bike racing in your browser: 6 riders, big-air tricks that charge boost, and punches that settle the rest. No ads, no sign-up — press Enter and ride.">
 <meta property="og:title" content="DOWNHILL MAYHEM — free PS2-style downhill racing in your browser">
@@ -162,9 +165,10 @@
   #tT3 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   #tT4 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
-  #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(116px + env(safe-area-inset-right)); }
-  #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
-  #tHome { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
+  #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(168px + env(safe-area-inset-right)); }
+  #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(116px + env(safe-area-inset-right)); }
+  #tHome { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
+  #tFull { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
 
   #rotate { position:absolute; inset:0; z-index:7; display:none; flex-direction:column; gap:8px;
     align-items:center; justify-content:center; text-align:center; background:rgba(8,12,18,.88);
@@ -233,8 +237,7 @@
       <span><b>Z X C</b></span><span>Tricks — airborne only, land after the bar fills</span>
       <span><b>↓ / S in air</b></span><span>Backflip</span>
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
-      <span><b>E</b></span><span>Punch a nearby rider</span>
-      <span><b>F</b></span><span>Kick — works mid-air for bonus boost</span>
+      <span><b>E / F</b></span><span>Punch / Kick — both work mid-air; hits pay boost, extra airborne or boosting</span>
       <span><b>R · M · T</b></span><span>Restart · Mute · CRT filter</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
@@ -258,6 +261,7 @@
     <div class="tbtn tiny" id="tMute">🔊</div>
     <div class="tbtn tiny" id="tRestart">⟳</div>
     <div class="tbtn tiny" id="tHome">⌂</div>
+    <div class="tbtn tiny" id="tFull">⛶</div>
   </div>
   <div id="rotate">🔄 ROTATE YOUR PHONE<br><span style="font-size:16px;color:#fff">mayhem needs landscape</span></div>
 
@@ -322,7 +326,7 @@ const HOP_VY=3.3, RAMP_HOP_BONUS=1.9, DETACH_G=2.6;
 const STUMBLE_IMPACT=9.5, CRASH_IMPACT=14.5, CRASH_TIME=1.8, INVULN_TIME=2.6;
 const BOOST_A=9.0, BOOST_DRAIN=27, BOOST_MIN=4;
 const METER_TRICKLE=3.5;                   // passive fill per second of clean riding
-const HIT_METER=6, AIR_STRIKE_METER=14;    // combat rewards (extra when airborne)
+const HIT_METER=6, AIR_STRIKE_METER=14, BOOST_STRIKE_METER=10; // combat pays; more airborne or boosting
 const PUNCH_S=2.2, PUNCH_LAT=1.6, PUNCH_DY=1.4, PLAYER_PUNCH_CD=0.75;
 const TRICK_GRACE=0.22, BIGAIR_T=1.15, BIGAIR_METER=8;
 const TRICKS={
@@ -574,6 +578,12 @@ window.addEventListener('keydown',e=>{
     document.getElementById('vig').classList.toggle('off'); }
 });
 window.addEventListener('keyup',e=>{ const a=KEYMAP[e.code]; if(a) keys[a]=false; });
+// backgrounding the tab/app silences the engine (frames already halt; audio would not)
+document.addEventListener('visibilitychange',()=>{
+  if(!AudioSys.ctx) return;
+  if(document.hidden) AudioSys.ctx.suspend().catch(()=>{});
+  else AudioSys.ctx.resume().catch(()=>{});
+});
 
 // ---- touch controls (phones/tablets) ----
 const IS_TOUCH=(('ontouchstart' in window)||navigator.maxTouchPoints>0)&&matchMedia('(pointer:coarse)').matches;
@@ -605,22 +615,31 @@ function initTouch(){
   bind('tRestart',()=>{ if(state!=='title') resetRace(); });
   bind('tHome',()=>{ if(state!=='title') goTitle(); });
   bind('tMute',()=>AudioSys.toggleMute());
+  bind('tFull',()=>{
+    if(document.fullscreenElement){ document.exitFullscreen().catch(()=>{}); }
+    else enterFullscreen();
+  });
   // boost is a latch on touch — thumbs are busy steering
   tBoostEl=document.getElementById('tBoost');
   tBoostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
     keys.boost=!keys.boost; tBoostEl.classList.toggle('on',keys.boost); });
   tBoostEl.addEventListener('contextmenu',e=>e.preventDefault());
-  // tap anywhere: start from title / race again from results
+  // tap anywhere: start from title / race again from results — and use that same
+  // gesture to (re)enter fullscreen, since browsers only honour it inside one
   window.addEventListener('pointerdown',()=>{ AudioSys.ensure();
-    if(state==='title'||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt)) pressQueue.enter=true; });
-  // best-effort fullscreen + landscape lock (Android; harmless elsewhere)
-  window.addEventListener('pointerdown',function once(){
-    try{
-      Promise.resolve(document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen())
-        .then(()=>screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape'))
-        .catch(()=>{});
-    }catch(_){}
-  },{once:true});
+    if(state==='title'||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt)){
+      pressQueue.enter=true;
+      if(state==='title') enterFullscreen();
+    }
+  });
+}
+function enterFullscreen(){
+  try{
+    if(document.fullscreenElement||!document.documentElement.requestFullscreen) return;
+    document.documentElement.requestFullscreen()
+      .then(()=>{ try{ screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{}); }catch(_){} })
+      .catch(()=>{});
+  }catch(_){}
 }
 function clearTouchBoost(){
   if(IS_TOUCH&&keys.boost){ keys.boost=false; if(tBoostEl) tBoostEl.classList.remove('on'); }
@@ -1250,10 +1269,11 @@ function tryStrike(attacker,kind){
     if(attacker.isPlayer) RACE_STATS.decked++;
     if(nearPlayer||best.isPlayer) AudioSys.strikeLand(attacker.isPlayer||best.isPlayer?1:0.5);
     if(attacker.isPlayer){
-      const air=!attacker.grounded;
-      const gain=HIT_METER+(air?AIR_STRIKE_METER:0);
+      const air=!attacker.grounded, boosting=attacker.boosting;
+      const gain=HIT_METER+(air?AIR_STRIKE_METER:0)+(boosting?BOOST_STRIKE_METER:0);
       attacker.meter=Math.min(100,attacker.meter+gain);
-      popup(air?('AIR STRIKE! +'+gain):(kind==='kick'?'BOOT!':'POW!'),'pow');
+      popup(air?('AIR STRIKE! +'+gain):boosting?('BOOST STRIKE! +'+gain)
+        :(kind==='kick'?'BOOT!':'POW!'),'pow');
     }
     if(best.isPlayer) lastAIPunchOnPlayer=gameTime;
     return true;
@@ -1382,10 +1402,11 @@ function playerInput(){
   inp.hop=active&&fresh(pressQueue.hop);
   if(inp.hop&&player.grounded) pressQueue.hop=0;
   inp.trick=active&&fresh(pressQueue.trickAt)?pressQueue.trick:null;
-  if(active&&fresh(pressQueue.punch)&&player.punchCd<=0&&player.grounded){
+  // punches and kicks both work grounded, mid-air, and while boosting
+  if(active&&fresh(pressQueue.punch)&&player.punchCd<=0){
     pressQueue.punch=0; player.punchCd=PLAYER_PUNCH_CD; tryStrike(player,'punch');
   }
-  if(active&&fresh(pressQueue.kick)&&player.punchCd<=0){   // kicks work mid-air too
+  if(active&&fresh(pressQueue.kick)&&player.punchCd<=0){
     pressQueue.kick=0; player.punchCd=PLAYER_PUNCH_CD; tryStrike(player,'kick');
   }
   if(active&&inp.trick){
@@ -1899,6 +1920,7 @@ window.GAME={
   get best(){ return BEST; }, raceStats:RACE_STATS,
   get hitStopT(){ return hitStopT; }, get countdownDur(){ return countDur; },
   get mode(){ return MODE; }, get seed(){ return CUR_SEED; },
+  audioState(){ return AudioSys.ctx?AudioSys.ctx.state:'none'; },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{

@@ -40,8 +40,8 @@ The whole game is a single self-contained `index.html` — no build step, no npm
 | `Space` | Bunny hop — hop right at a ramp lip for bonus air |
 | `Z` `X` `C` | Tricks while airborne: No Hander / Superman / Heel Clicker |
 | `Shift` | Boost (drains the meter) |
-| `E` | Punch a nearby rider off their bike |
-| `F` | Kick — also works mid-air, and air strikes pay bonus boost |
+| `E` | Punch a nearby rider off their bike — works mid-air too |
+| `F` | Kick — also mid-air; landed hits pay boost, extra while airborne or boosting |
 | `R` | Restart the race |
 | `M` | Mute audio |
 | `T` | Toggle the CRT scanline/vignette filter |
