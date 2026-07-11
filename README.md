@@ -57,9 +57,10 @@ meter in on its own — crashing dumps most of it. The groomed line is fastest, 
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
 lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
 slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
-land a mid-air kick for an AIR STRIKE bonus. Races are decided in the final third;
-rivals bank boost of their own and burn it to close a gap — no lead is safe. Riders
-get fresh jersey colours every race.
+land a mid-air kick for an AIR STRIKE bonus. The pack races for keeps: rivals roll
+off the gate with boost already banked, burn it in visible surges to close any gap,
+hound a clean leader all the way down, and empty the tank over the final stretch —
+no lead is safe. Riders get fresh jersey colours every race.
 
 **Two mountains:** the **Classic** is the same course forever — your lifetime best lives
 there. The **Daily** (press `D` on the title screen) is a brand-new mountain generated
@@ -70,8 +71,9 @@ New course every day, same rivals, no server involved.
 in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW
 PERSONAL BEST fanfare. The HUD shows the live gap to the rider ahead, every overtake pops
 on screen, and the results screen ends with a one-line recap of how your race actually
-went plus your run's stats — top speed, biggest air, tricks, best combo, riders decked. Restarts use a shortened countdown after the first
-race, and `Esc` returns to the title screen.
+went plus your run's stats — top speed, biggest air, tricks, best combo, riders decked.
+Restarts use a shortened countdown after the first race, and `Esc` returns to the title
+screen.
 
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
 screen — it copies a link that carries the exact mountain and your time. Anyone opening
@@ -80,14 +82,17 @@ The whole challenge lives in the link; there is no server and no account.
 
 **The rest of the arsenal:** the title screen is a live broadcast — an AI-only race runs
 behind the menu with spectator camera cuts, arcade attract-mode style, until you press
-start. Your best run rides with you as a translucent ghost (`G` toggles it). A synthesized drum-and-bass loop kicks in at GO and intensifies in the
-final stretch. Tuck in behind a rider to slipstream, then swing. Butter a landing on
-the downslope for a CLEAN bonus. The descent itself changes as you drop — frosty alpine
-up top, pine forest in the middle, warm canyon at the bottom. Finish within half a
-second of anyone and you get the PHOTO FINISH freeze; every race ends with a graded
-rank stamp (F to A+, with a verdict); and any rival you deck drops the race plan and *hunts you* —
-smouldering red, waiting if they must — until they've knocked you down and honour is
-settled. Then they go back to racing.
+start. Your best run rides with you as a translucent ghost (`G` or the 👻 button toggles
+it). A synthesized drum-and-bass loop kicks in at GO — the wind ducks out of its way —
+and intensifies in the final stretch. Tuck in behind a rider to slipstream, then swing.
+Butter a landing on the downslope for a CLEAN bonus. The descent itself changes as you
+drop — frosty alpine up top, pine forest in the middle, warm canyon at the bottom.
+Finish within half a second of anyone and you get the PHOTO FINISH freeze. Every race
+ends with a graded rank stamp, F to A+ with a one-word verdict: your finishing spot sets
+the band (a plain win is an A — LEGENDARY takes style), and tricks, knockdowns and PBs
+fill it. And any rival you deck drops the race plan and *hunts you* — smouldering red,
+faster than any racer has a right to be, waiting for you if they must — until they've
+knocked you down and honour is settled. Then they go back to racing.
 
 ## Tech notes
 
