@@ -126,7 +126,12 @@
   /* ---- Results ---- */
   #results { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center;
     justify-content:center; color:#fff; background:rgba(5,8,14,.45); }
-  #resPanel { background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); }
+  #resPanel { position:relative; background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); }
+  #rankStamp { position:absolute; top:-22px; right:-18px; font-size:58px; font-style:italic; font-weight:900;
+    padding:0 16px; border:4px solid currentColor; border-radius:8px; transform:rotate(12deg);
+    background:rgba(0,0,0,.65); text-shadow:3px 3px 0 rgba(0,0,0,.8); }
+  #rankStamp.S { color:#ffd23f; } #rankStamp.A { color:#59ff7a; } #rankStamp.B { color:#6fc3ff; }
+  #rankStamp.C { color:#fff; } #rankStamp.D { color:#9aa0a8; }
   #resTitle { font-style:italic; font-size:44px; color:#ffd23f; text-shadow:3px 3px 0 #000; text-align:center; letter-spacing:1px; }
   #resSub { text-align:center; font-size:15px; margin:2px 0 4px; color:#9fd; font-style:italic; }
   #resStats { text-align:center; font-size:12px; margin:0 0 12px; color:#ffd23f; font-style:italic; letter-spacing:.5px; }
@@ -238,7 +243,7 @@
       <span><b>↓ / S in air</b></span><span>Backflip</span>
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
       <span><b>E / F</b></span><span>Punch / Kick — both work mid-air; hits pay boost, extra airborne or boosting</span>
-      <span><b>R · M · T</b></span><span>Restart · Mute · CRT filter</span>
+      <span><b>R · M · T · G</b></span><span>Restart · Mute · CRT filter · Ghost on/off</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
     <div id="modeSwap"></div>
@@ -267,6 +272,7 @@
 
   <div id="results" class="hidden">
     <div id="resPanel">
+      <div id="rankStamp"></div>
       <div id="resTitle">RESULTS</div>
       <div id="resSub"></div>
       <div id="resStats"></div>
@@ -490,6 +496,7 @@ const AudioSys={
       const w=mk('lowpass',600); this.wind=w.g; this.windF=w.f;
       const dd=mk('lowpass',240); this.dirt=dd.g; this.dirtF=dd.f;
       const bb=mk('bandpass',1400); this.boost=bb.g;
+      this.musicGain=ctx.createGain(); this.musicGain.gain.value=0.16; this.musicGain.connect(this.master);
       this.started=true;
       if(ctx.state==='suspended') ctx.resume().catch(()=>{});
     }catch(e){ /* audio is optional */ }
@@ -528,13 +535,47 @@ const AudioSys={
   posUp(){ this.blip(620,0.06,0.2,'square'); setTimeout(()=>this.blip(930,0.08,0.22,'square'),70); },
   posDown(){ this.blip(520,0.06,0.18,'square'); setTimeout(()=>this.blip(350,0.09,0.2,'square'),70); },
   countBeep(go){ this.blip(go?900:600, go?0.4:0.12, 0.35,'square'); },
+
+  // ---- synthesized race loop (two-step drums + pentatonic bass) ----
+  music:{on:false,timer:null,step:0,next:0}, intense:false,
+  oscAt(t,f0,f1,dur,vol,type){ const c=this.ctx,o=c.createOscillator(),g=c.createGain();
+    o.type=type; o.frequency.setValueAtTime(f0,t);
+    if(f1!==f0) o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+    o.connect(g); g.connect(this.musicGain);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.03); },
+  noiseAt(t,freq,dur,vol){ const c=this.ctx,s=c.createBufferSource(); s.buffer=this.noiseBuf;
+    const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=freq;
+    const g=c.createGain(); s.connect(f); f.connect(g); g.connect(this.musicGain);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    s.start(t); s.stop(t+dur+0.03); },
+  BASS32:{0:55,3:55,6:65.41,8:55,11:82.41,14:73.42,16:55,19:49,22:65.41,24:82.41,27:73.42,30:98},
+  playStep(i,t,abs){
+    const hot=this.intense;
+    if(i%16===0||i%16===10) this.oscAt(t,120,42,0.13,0.6,'sine');            // kick
+    if(i%16===4||i%16===12){ this.noiseAt(t,1800,0.09,0.34); this.oscAt(t,190,120,0.06,0.16,'triangle'); } // snare
+    if(i%2===0) this.noiseAt(t,6000,0.03,(i%4===2)?0.10:0.16);               // hats
+    else if(hot) this.noiseAt(t,7000,0.025,0.09);
+    const b=this.BASS32[i];
+    if(b) this.oscAt(t,hot?b*2:b,hot?b*2:b,0.16,0.30,'square');
+    if(!hot&&abs%64===56){ this.oscAt(t,440,660,0.18,0.10,'triangle'); }     // sparse fill
+  },
+  startMusic(){ if(!this.started||this.music.on) return;
+    const m=this.music; m.on=true; m.step=0; m.next=this.ctx.currentTime+0.06;
+    m.timer=setInterval(()=>{ const c=this.ctx,SPB=60/136/4;
+      while(m.next<c.currentTime+0.12){ this.playStep(m.step%32,m.next,m.step); m.step++; m.next+=SPB; }
+    },25); },
+  stopMusic(){ const m=this.music; m.on=false; if(m.timer){ clearInterval(m.timer); m.timer=null; } },
   hopSnd(){ this.noiseHit(700,0.08,0.18); },
   pedalTick(){ this.blip(2200,0.015,0.06,'square'); },
   update(dt,p,racing){
     if(!this.started) return;
     const v=clamp(p.vs/33,0,1);
     this.wind.gain.value = 0.014 + v*v*0.21;
-    this.windF.frequency.value = 260 + v*2700;
+    this.windF.frequency.value = 260 + v*2700 + p.draftT*380;
+    this.intense = racing&&!p.finished&&p.s>FINISH_S-400;
     this.dirt.gain.value = (p.grounded&&!p.crashed&&racing) ? 0.03+v*0.20+p.driftT*0.28 : 0.0;
     if(this.dirt.gain.value>0) this.dirtF&&(this.dirtF.frequency.value=240+p.driftT*650);
     this.boost.gain.value = p.boosting ? 0.35 : Math.max(0,this.boost.gain.value-dt*2);
@@ -573,6 +614,7 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='Escape'){ if(state!=='title'&&state!=='boot') goTitle(); }
   else if(e.code==='KeyD'&&state==='title'){ setMode('daily'); resetRace(); }
   else if(e.code==='KeyC'&&state==='title'){ setMode('classic'); resetRace(); }
+  else if(e.code==='KeyG') ghostShow=!ghostShow;
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT'){ document.getElementById('crt').classList.toggle('off');
     document.getElementById('vig').classList.toggle('off'); }
@@ -648,7 +690,8 @@ function clearTouchBoost(){
 // ------------------------------------------------------------ three --------
 let renderer,scene,camera,fxCanvas,fxCtx;
 const UP=new THREE.Vector3(0,1,0);
-let skyDome,mountains;
+let skyDome,mountains,SUN,HEMI;
+const SUN_COLD=new THREE.Color(0xdfeaff), SUN_MID=new THREE.Color(0xfff1d6), SUN_WARM=new THREE.Color(0xffd9a0);
 
 function initThree(){
   renderer=new THREE.WebGLRenderer({ antialias:false, powerPreference:'high-performance' });
@@ -662,8 +705,8 @@ function initThree(){
   // camera.far sits just past the fog wall so frustum culling actually drops
   // the kilometre of already-invisible terrain ahead (the PS2 way)
   camera=new THREE.PerspectiveCamera(74, innerWidth/innerHeight, 0.3, 330);
-  scene.add(new THREE.HemisphereLight(0xbfd8ff,0x6b5a43,0.85));
-  const sun=new THREE.DirectionalLight(0xfff1d6,0.95); sun.position.set(60,100,40); scene.add(sun);
+  HEMI=new THREE.HemisphereLight(0xbfd8ff,0x6b5a43,0.85); scene.add(HEMI);
+  SUN=new THREE.DirectionalLight(0xfff1d6,0.95); SUN.position.set(60,100,40); scene.add(SUN);
 
   // sky dome (vertex-colour gradient, unfogged, follows camera, inside far plane)
   {
@@ -755,6 +798,15 @@ function terrainColor(s,lat,rampH,out){
     r=lerp(dirt.r,lerp(grass.r,dirt.r,patch),t); g=lerp(dirt.g,lerp(grass.g,dirt.g,patch),t); b=lerp(dirt.b,lerp(grass.b,dirt.b,patch),t);
   }
   else { const t=smoothstep((a-RIDE_W-2)/5); r=lerp(grass.r,rock.r,t); g=lerp(grass.g,rock.g,t); b=lerp(grass.b,rock.b,t); }
+  // the descent tells a story: frosty alpine up top, warm canyon at the bottom
+  const fAlt=clamp(s/FINISH_S,0,1);
+  const cold=clamp((0.32-fAlt)/0.32,0,1), warm=clamp((fAlt-0.68)/0.32,0,1);
+  if(cold>0){
+    const snow=a>6?clamp(vnoise2(s*0.31+NOFF,lat*0.27)+0.35,0,1)*cold:0;
+    r=lerp(r,0.84,snow*0.85); g=lerp(g,0.86,snow*0.85); b=lerp(b,0.92,snow*0.85);
+    b=Math.min(1,b*(1+0.18*cold)); g=g*(1-0.05*cold);
+  }
+  if(warm>0){ r=Math.min(1,r*(1+0.20*warm)+0.03*warm); g=g*(1-0.04*warm); b=b*(1-0.26*warm); }
   out.setRGB(r,g,b); return out;
 }
 
@@ -809,7 +861,10 @@ function buildScenery(){
   // instances are bucketed by course distance so frustum culling can drop
   // whole 280 m stretches of forest (big win with heavy fog)
   const BUCKET=200;
-  const trunks={}, fol1={}, fol2={}, rocks1={}, rocks2={};
+  const trunks={}, fol1={}, fol2={}, folSnow={}, folDry={}, rocks1={}, rocks2={};
+  const pickFol=(s)=> s<FINISH_S*0.30?(rng()<0.6?folSnow:fol1)
+                    : s>FINISH_S*0.70?(rng()<0.6?folDry:fol2)
+                    : (rng()<0.5?fol1:fol2);
   const m4=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(),
         pv=new THREE.Vector3(), sv=new THREE.Vector3();
   function push(store,s,m){ const b=Math.floor((s-S_MIN)/BUCKET); (store[b]=store[b]||[]).push(m.clone()); }
@@ -826,14 +881,14 @@ function buildScenery(){
     const sT=s+rng()*30;
     const nearFeature=ramps.some(r=>sT>r.s0-30&&sT<r.s0+r.len+45)||drops.some(d=>Math.abs(d.s0-sT)<45);
     if(nearFeature) continue;
-    addTree(sT,(rng()*2-1)*6.2, rng()<0.5?fol1:fol2);
+    addTree(sT,(rng()*2-1)*6.2, pickFol(sT));
   }
   // scattered trees across the open hillside + forest on the slopes beyond
   for(let s=60;s<S_MAX-40;s+=8+rng()*10){
     if(rng()<0.4){ const side=rng()<0.5?1:-1;
-      addTree(s+rng()*4, side*(9.5+rng()*15.5), rng()<0.5?fol1:fol2); }
+      addTree(s+rng()*4, side*(9.5+rng()*15.5), pickFol(s)); }
     for(let k=0;k<2;k++){ if(rng()<0.8){ const side=rng()<0.5?1:-1;
-      addTree(s+rng()*8, side*(28+rng()*36), rng()<0.5?fol1:fol2); } }
+      addTree(s+rng()*8, side*(28+rng()*36), pickFol(s)); } }
   }
   // boulders (outside the rideable corridor; sunk to survive far-column jitter)
   for(let s=40;s<S_MAX-40;s+=26+rng()*34){
@@ -861,6 +916,8 @@ function buildScenery(){
   inst(new THREE.CylinderGeometry(0.16,0.24,2.2,5), 0x5a4028, trunks);
   inst(new THREE.ConeGeometry(1.5,3.4,6), 0x2d5a27, fol1);
   inst(new THREE.ConeGeometry(1.3,3.0,6), 0x3a6b2f, fol2);
+  inst(new THREE.ConeGeometry(1.4,3.2,6), 0x71917f, folSnow);
+  inst(new THREE.ConeGeometry(1.3,3.0,6), 0x77772f, folDry);
   inst(new THREE.DodecahedronGeometry(1,0), 0x8d8a84, rocks1);
   inst(new THREE.DodecahedronGeometry(1,0), 0x6f6d68, rocks2);
 }
@@ -1021,7 +1078,7 @@ function makeRider(def,idx){
     inp:{pedal:0,brake:0,steer:0,hop:false,boost:false,punch:false,trick:null},
     // physics
     s:0, lat:START_LATS[idx], y:0, vs:0, vlat:0, vy:0, grounded:true,
-    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0, wallT:0,
+    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0, wallT:0, draftT:0, grudge:false,
     // race
     finished:false, finishTime:null, racePos:idx+1, rubber:0,
     // trick/boost
@@ -1040,6 +1097,35 @@ function makeRider(def,idx){
   return r;
 }
 function makeRiders(){ RIDER_DEFS.forEach((d,i)=>makeRider(d,i)); player=riders[0]; }
+
+// translucent replay of your PB run
+function buildGhost(){
+  const def={color:0x8fe3ff,skin:0x8fe3ff};
+  const viz=buildRiderModel(def);
+  viz.shadow.visible=false;
+  const gm=new THREE.MeshBasicMaterial({color:0x9fe8ff,transparent:true,opacity:0.30,depthWrite:false,fog:true});
+  viz.root.traverse(o=>{ if(o.isMesh) o.material=gm; });
+  viz.torsoG.rotation.x=0.8;
+  viz.armL.rotation.set(-1.05,0,0.12); viz.armR.rotation.set(-1.05,0,-0.12);
+  viz.legL.rotation.x=-0.42; viz.legR.rotation.x=-0.42;
+  viz.root.visible=false;
+  ghostViz=viz;
+}
+function updateGhost(){
+  if(!ghostViz) return;
+  const on=ghostShow&&ghostData&&state==='racing'&&!FAST;
+  if(!on){ ghostViz.root.visible=false; return; }
+  const n=Math.floor(ghostData.length/3);
+  const T=raceTime/GHOST_DT;
+  if(T>=n-1){ ghostViz.root.visible=false; return; } // ghost has finished
+  const i=Math.floor(T), f=T-i;
+  const s=lerp(ghostData[i*3],ghostData[i*3+3],f);
+  const lat=lerp(ghostData[i*3+1],ghostData[i*3+4],f);
+  const y=lerp(ghostData[i*3+2],ghostData[i*3+5],f);
+  worldPos(s,lat,Math.max(y,groundHeight(s,lat)),ghostViz.root.position);
+  ghostViz.root.rotation.set(0,sampleTrack(s,TMP_C).h,0);
+  ghostViz.root.visible=true;
+}
 
 // ------------------------------------------------------------ physics ------
 function groundSlopeVy(r){
@@ -1083,11 +1169,16 @@ function handleLanding(r,impact){
     RACE_STATS.tricksLanded+=r.pendingNames.length;
     RACE_STATS.bestCombo=Math.max(RACE_STATS.bestCombo,r.chain);
   }
+  if(r.isPlayer&&air>0.45&&impact<2.8){    // buttered onto the downslope
+    gain+=5; popup('CLEAN! +5','small'); AudioSys.blip(1180,0.08,0.2,'triangle');
+  }
   if(gain>0&&r.isPlayer){
     r.meter=clamp(r.meter+gain,0,100);
-    const names=r.pendingNames.length?r.pendingNames.join(' + '):'BIG AIR';
-    popup(names+'  +'+Math.round(gain),'');
-    AudioSys.chime();
+    if(r.pendingNames.length||air>BIGAIR_T){   // the CLEAN popup already covered a bare +5
+      const names=r.pendingNames.length?r.pendingNames.join(' + '):'BIG AIR';
+      popup(names+'  +'+Math.round(gain),'');
+      AudioSys.chime();
+    }
   }
   r.pendingMeter=0; r.pendingNames.length=0; r.chain=0;
 }
@@ -1144,7 +1235,8 @@ function riderStep(r,dt){
     a+=inp.pedal*PEDAL_A*Math.max(0,1-r.vs/PEDAL_VMAX)*(1+r.rubber*0.6);
     a-=inp.brake*BRAKE_A;
     const dragMult=zone===0?1:(zone===1?1.55:5.5);
-    a-=DRAG*dragMult*r.vs*r.vs*(1-r.rubber*0.55);
+    a-=DRAG*dragMult*r.vs*r.vs*(1-r.rubber*0.55)*(1-0.32*r.draftT);
+    a+=0.8*r.draftT;
     a-=zone===0?ROLL_F:(zone===1?1.1:3.4);
     // boost (latch: engage above BOOST_MIN, then drain to zero)
     if(!inp.boost||r.meter<=0) r.boostLatch=false;
@@ -1278,6 +1370,10 @@ function tryStrike(attacker,kind){
       popup(air?('AIR STRIKE! +'+gain):boosting?('BOOST STRIKE! +'+gain)
         :(kind==='kick'?'BOOT!':'POW!'),'pow');
     }
+    if(attacker.isPlayer&&!best.isPlayer&&!best.grudge){
+      best.grudge=true;                        // he'll remember that
+      setTimeout(()=>popup(best.def.name+' WANTS REVENGE!','down'),700);
+    }
     if(best.isPlayer) lastAIPunchOnPlayer=gameTime;
     return true;
   }
@@ -1374,7 +1470,7 @@ function aiThink(r,dt){
         tryStrike(r,r.strikeKind);
       } else { if(r.strikeKind==='kick') r.kickAnimT=0; else r.punchAnimT=0;
         if(Math.abs(r.s-player.s)<40) AudioSys.whoosh(); }
-      r.punchCd=9+Math.random()*6;
+      r.punchCd=r.grudge?5+Math.random()*3:9+Math.random()*6;
     }
   } else if(r.punchCd<=0&&r.grounded){
     for(const o of riders){
@@ -1383,7 +1479,7 @@ function aiThink(r,dt){
       if(ds<2.0&&dl<1.3&&Math.abs(o.y-r.y)<PUNCH_DY){
         const isP=o.isPlayer;
         if(isP&&gameTime-lastAIPunchOnPlayer<4) continue;
-        if(Math.random()<r.def.aggr*(isP?1:0.3)*dt*2.2){
+        if(Math.random()<r.def.aggr*(isP?(r.grudge?2.5:1):0.3)*dt*2.2){
           r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
           r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
           if(isP) AudioSys.tell();   // audible warning when you're the target
@@ -1428,8 +1524,12 @@ let racesRun=0, countDur=3.8, prevPlayerPos=0, posPopupCd=0, hitStopT=0;
 const RACE_STATS={ topSpeed:0, biggestAir:0, tricksLanded:0, decked:0, bestCombo:0 };
 const SAVE_KEY='downhill-mayhem-best';
 let BEST={};
+// ghost of your PB run: (s,lat,y) sampled at 10 Hz, stored with the best time
+const GHOST_DT=0.1;
+let ghostRec=[], ghostData=null, ghostShow=true, ghostViz=null;
+function loadGhost(){ ghostData=(BEST.ghost&&BEST.ghost.length>30)?BEST.ghost:null; }
 function bestKey(){ return MODE==='classic'?SAVE_KEY:SAVE_KEY+'-d'+CUR_SEED; }
-function loadBestFor(){ try{ BEST=JSON.parse(localStorage.getItem(bestKey())||'{}')||{}; }catch(e){ BEST={}; } }
+function loadBestFor(){ try{ BEST=JSON.parse(localStorage.getItem(bestKey())||'{}')||{}; }catch(e){ BEST={}; } loadGhost(); }
 function saveBest(){ try{ localStorage.setItem(bestKey(),JSON.stringify(BEST)); }catch(e){} }
 
 // challenge links: ?c=c-<time> (classic) or ?c=d-<seed>-<time> (a specific daily)
@@ -1459,6 +1559,7 @@ function setMode(mode,seed){
 
 function goTitle(){
   state='title';
+  AudioSys.stopMusic();
   document.getElementById('title').classList.remove('hidden');
   document.getElementById('hud').classList.add('hidden');
   document.getElementById('results').classList.add('hidden');
@@ -1486,6 +1587,7 @@ function resetRace(){
   for(const r of riders){
     r.s=0; r.lat=START_LATS[r.idx]; r.y=groundHeight(r.s,r.lat);
     r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0; r.wallT=0;
+    r.draftT=0; r.grudge=false;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
     r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
     r.meter=0; r.boosting=false; r.boostLatch=false;
@@ -1496,6 +1598,7 @@ function resetRace(){
     r.viz.bike.rotation.set(0,0,0); r.viz.person.visible=true;
   }
   raceTime=0; countT=0; lastCountDigit=-1; resultsShownAt=-1; shake=0;
+  ghostRec=[]; AudioSys.stopMusic();
   countDur=racesRun===0?3.8:2.0; racesRun++;   // full ceremony once, quick re-entry after
   prevPlayerPos=0; posPopupCd=0; hitStopT=0;
   RACE_STATS.topSpeed=0; RACE_STATS.biggestAir=0; RACE_STATS.tricksLanded=0;
@@ -1511,8 +1614,10 @@ function finishRider(r){
   r.finished=true; r.finishTime=raceTime;
   if(r.isPlayer){
     state='finished';
+    AudioSys.stopMusic();
     const newPB=!BEST.time||r.finishTime<BEST.time;
-    if(newPB) BEST.time=r.finishTime;
+    if(newPB){ BEST.time=r.finishTime;
+      BEST.ghost=ghostRec.map(v=>Math.round(v*10)/10); loadGhost(); }
     if(challengeActive()){
       r.chalDiff=r.finishTime-CHAL.time;
       if(r.chalDiff<0){ setTimeout(()=>popup('CHALLENGE BEATEN!','pb'),1200); }
@@ -1525,9 +1630,17 @@ function finishRider(r){
     saveBest();
     AudioSys.jingle(newPB);
     const place=riders.filter(o=>o.finished&&o.finishTime<=r.finishTime).length;
+    // photo finish: anyone at the line with you freezes the frame
+    const close=riders.some(o=>o!==r&&(o.finished?Math.abs(o.finishTime-r.finishTime)<0.5
+      :Math.abs(o.s-FINISH_S)<12));
+    if(close&&!FAST){ hitStopT=0.55; setTimeout(()=>popup('PHOTO FINISH!','pb'),60); }
     popup(ordinal(place)+' PLACE!','');
     if(newPB) setTimeout(()=>popup('NEW PERSONAL BEST!','pb'),650);
     r.newPB=newPB;
+    // arcade rank stamp for the results screen
+    const pts=(7-place)*14+Math.min(RACE_STATS.tricksLanded*6,30)
+      +Math.min(RACE_STATS.decked*8,24)+(newPB?20:0);
+    r.rank=pts>=118?'S':pts>=92?'A':pts>=66?'B':pts>=40?'C':'D';
   }
 }
 function updatePositions(){
@@ -1554,12 +1667,26 @@ function updateRace(dt){
     } else {
       el.classList.add('hidden');
       state='racing'; raceTime=0;
-      popup('GO!','go'); AudioSys.countBeep(true);
+      popup('GO!','go'); AudioSys.countBeep(true); AudioSys.startMusic();
     }
   }
   if(state==='racing'||state==='finished'){
     raceTime+=dt; // race clock keeps running for AI results
+    if(state==='racing'&&!player.finished&&raceTime>=ghostRec.length/3*GHOST_DT)
+      ghostRec.push(player.s,player.lat,player.y);
     playerInput();
+    // slipstream: tuck in close behind a rider on the same line for a tow
+    for(const r of riders){
+      let tow=false;
+      if(!r.crashed&&r.grounded){
+        for(const o of riders){
+          if(o===r||o.crashed) continue;
+          const ds=o.s-r.s;
+          if(ds>1.2&&ds<6.5&&Math.abs(o.lat-r.lat)<1.1&&o.vs>6){ tow=true; break; }
+        }
+      }
+      r.draftT=clamp(r.draftT+(tow?dt/0.5:-dt/0.4),0,1);
+    }
     for(const r of riders){ if(!r.isPlayer) aiThink(r,dt); }
     const sub=dt>0.022?2:1, h=dt/sub;
     for(let k=0;k<sub;k++) for(const r of riders) riderStep(r,h);
@@ -1617,6 +1744,9 @@ function showResults(){
     sub+=player.chalDiff<0?' · CHALLENGE BEATEN':' · challenge +'+player.chalDiff.toFixed(2)+'s';
   document.getElementById('resSub').textContent=sub;
   document.getElementById('chalBtn').style.display=player.finished?'block':'none';
+  const rs=document.getElementById('rankStamp');
+  if(player.finished&&player.rank){ rs.textContent=player.rank; rs.className=player.rank; rs.style.display='block'; }
+  else rs.style.display='none';
   document.getElementById('resStats').textContent=
     'TOP '+Math.round(RACE_STATS.topSpeed)+' km/h · AIR '+RACE_STATS.biggestAir.toFixed(1)+'s · TRICKS '
     +RACE_STATS.tricksLanded+' · COMBO ×'+RACE_STATS.bestCombo+' · DECKED '+RACE_STATS.decked;
@@ -1861,13 +1991,20 @@ function updateCamera(dt){
   skyDome.position.copy(camera.position);
   // peaks sit just below eye level on the horizon: you are UP a mountain
   mountains.position.set(camera.position.x,camera.position.y-22,camera.position.z);
+  // sunlight warms as you descend: crisp alpine light up top, golden valley below
+  const fAlt=clamp(player.s/FINISH_S,0,1);
+  const cold=clamp((0.32-fAlt)/0.32,0,1), warm=clamp((fAlt-0.68)/0.32,0,1);
+  SUN.color.copy(SUN_MID);
+  if(cold>0) SUN.color.lerp(SUN_COLD,cold);
+  if(warm>0) SUN.color.lerp(SUN_WARM,warm);
+  SUN.intensity=0.95+warm*0.12;
 }
 function drawFx(){
   const w=fxCanvas.width,h=fxCanvas.height;
-  const on=player.boosting||player.vs>25;
+  const on=player.boosting||player.vs>25||player.draftT>0.55;
   fxCtx.clearRect(0,0,w,h);
   if(!on||state==='title') return;
-  const inten=player.boosting?1:clamp((player.vs-25)/7,0,0.7);
+  const inten=player.boosting?1:Math.max(clamp((player.vs-25)/7,0,0.7),player.draftT*0.4);
   fxCtx.strokeStyle='rgba(255,255,255,'+(0.28*inten)+')';
   fxCtx.lineWidth=2;
   const cxx=w/2,cyy=h/2;
@@ -1896,6 +2033,7 @@ function frame(now){
   if(hitStopT>0){ hitStopT-=dt; simDt=dt*0.08; }
   simFrame(simDt);
   for(const r of riders) riderVisual(r,simDt);
+  updateGhost();
   updateCamera(simDt);
   updateHud();
   drawFx();
@@ -1917,6 +2055,7 @@ function boot(){
   initThree();
   buildWorld();
   makeRiders();
+  buildGhost();
   initHud();
   initTouch();
   loadBestFor();
@@ -1939,6 +2078,9 @@ window.GAME={
   get hitStopT(){ return hitStopT; }, get countdownDur(){ return countDur; },
   get mode(){ return MODE; }, get seed(){ return CUR_SEED; },
   audioState(){ return AudioSys.ctx?AudioSys.ctx.state:'none'; },
+  get musicOn(){ return AudioSys.music.on; },
+  get ghostSamples(){ return ghostData?Math.floor(ghostData.length/3):0; },
+  get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{

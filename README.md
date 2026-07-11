@@ -44,8 +44,9 @@ no npm, no server, no network.
 | `E` | Punch a nearby rider off their bike — works mid-air too |
 | `F` | Kick — also mid-air; landed hits pay boost, extra while airborne or boosting |
 | `R` | Restart the race |
-| `M` | Mute audio |
+| `M` | Mute audio (music and all) |
 | `T` | Toggle the CRT scanline/vignette filter |
+| `G` | Toggle the ghost of your best run |
 
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
@@ -74,6 +75,14 @@ race, and `Esc` returns to the title screen.
 screen — it copies a link that carries the exact mountain and your time. Anyone opening
 it sees your time as a target on their HUD and gets a BEATEN/missed verdict at the line.
 The whole challenge lives in the link; there is no server and no account.
+
+**The rest of the arsenal:** your best run rides with you as a translucent ghost (`G`
+toggles it). A synthesized drum-and-bass loop kicks in at GO and intensifies in the
+final stretch. Tuck in behind a rider to slipstream, then swing. Butter a landing on
+the downslope for a CLEAN bonus. The descent itself changes as you drop — frosty alpine
+up top, pine forest in the middle, warm canyon at the bottom. Finish within half a
+second of anyone and you get the PHOTO FINISH freeze; every race ends with an arcade
+rank stamp (D to S); and any rival you deck will remember it — expect revenge.
 
 ## Tech notes
 
