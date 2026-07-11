@@ -21,15 +21,15 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 - **In your browser (desktop or phone):** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
 - **On itch.io:** [pranshuparmar.itch.io/downhill-mayhem](https://pranshuparmar.itch.io/downhill-mayhem)
-- **Locally:** just double-click `index.html` (keep it next to the `vendor/` folder).
-  Fully offline — nothing is fetched from anywhere.
+- **Locally:** just double-click `index.html`. Fully offline — nothing is fetched from
+  anywhere, ever.
 
 📱 On phones and tablets, touch controls appear automatically: steer and brake with the
 left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
 boost is tap-to-toggle, and the game asks you to rotate to landscape.
 
-The whole game is one `index.html` plus a vendored copy of three.js — no build step,
-no npm, no server, no network.
+The whole game is a single self-contained `index.html` — three.js included inside it —
+no build step, no npm, no server, no network.
 
 ## Controls
 
@@ -86,10 +86,10 @@ rank stamp (D to S); and any rival you deck will remember it — expect revenge.
 
 ## Tech notes
 
-- All game code lives in one HTML file. The only dependency, three.js r128
-  (classic global-script build), is vendored at `vendor/three.min.js`
-  (MIT — see `vendor/THREE.LICENSE`), so the game works from `file://` and
-  keeps working even if every CDN on Earth disappears.
+- Everything lives in one HTML file — including its only dependency, three.js r128
+  (MIT, see [THREE.LICENSE](THREE.LICENSE)), inlined directly. The file works from
+  `file://`, from any static host, and keeps working even if every CDN on Earth
+  disappears.
 - Seeded procedural course (~2.3 km, ~16% average grade) — the same mountain every run:
   sweeping turns, steep chutes, step-down drops, wooden kickers, and a broad rolling
   hillside around the racing line.
