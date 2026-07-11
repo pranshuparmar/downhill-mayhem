@@ -345,7 +345,7 @@ const BOOST_A=9.0, BOOST_DRAIN=27, BOOST_MIN=4;
 const METER_TRICKLE=3.5;                   // passive fill per second of clean riding
 const HIT_METER=6, AIR_STRIKE_METER=14, BOOST_STRIKE_METER=10; // combat pays; more airborne or boosting
 const PUNCH_S=2.2, PUNCH_LAT=1.6, PUNCH_DY=1.4, PLAYER_PUNCH_CD=0.75;
-const REVENGE_HUNT_T=20;                   // seconds a decked rival hunts you before racing on
+const REVENGE_HUNT_T=30;                   // seconds a decked rival hunts you before racing on
 const TRICK_GRACE=0.22, BIGAIR_T=1.15, BIGAIR_METER=8;
 const TRICKS={
   nohander:{ dur:0.55, meter:14, name:'NO HANDER' },
@@ -1259,7 +1259,7 @@ function riderStep(r,dt){
     r.boosting=r.boostLatch&&inp.boost&&r.meter>0;
     if(r.boosting){ a+=BOOST_A; r.meter=Math.max(0,r.meter-BOOST_DRAIN*dt); }
     // clean riding slowly builds adrenaline
-    else if(!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*(r.isPlayer?1:0.55)*dt);
+    else if(!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*(r.isPlayer?1:0.55+r.rubber*0.9)*dt);
     const cap=SOFTCAP_V*r.def.top*(1+r.rubber*0.5)+(r.boosting?4:0);
     if(r.vs>cap) a-=(r.vs-cap)*0.9;
     r.vs=Math.max(0,r.vs+a*dt);
@@ -1433,10 +1433,11 @@ function aiThink(r,dt){
   if(r.reactT>0){ r.reactT-=dt; return; }
   if(r.crashed) return;
 
-  // rubber-band vs player: full help catching up, only a light leash on
-  // leaders — nobody waits for a rider who isn't racing
+  // rubber-band vs player: help saturates within half a straight, so the pack
+  // stays glued to a clean leader instead of settling far behind; only a light
+  // leash on leaders — nobody waits for a rider who isn't racing
   const gap=player.s-r.s;
-  r.rubber=gap>=0?clamp(gap/110,0,1)*0.34:clamp(gap/160,-1,0)*0.055;
+  r.rubber=gap>=0?clamp(gap/45,0,1)*0.42:clamp(gap/160,-1,0)*0.055;
 
   // revenge mode: a decked rival drops the race plan and hunts the player
   // until payback lands — or the hunt goes stale, or the line is too close
@@ -1445,12 +1446,13 @@ function aiThink(r,dt){
     if(player.finished||r.s>FINISH_S-100) r.revengeT=0;  // the line settles all scores
   }
   const hunting=r.revengeT>0;
+  if(hunting&&gap>0) r.rubber=Math.max(r.rubber,0.5);    // blood in the nostrils
 
   // corner speed management (vendetta or not, corners still bite)
   const look=16+r.vs*0.9;
   const cAhead=sampleTrack(r.s+look,TMP_C).curv;
-  const maxV=Math.sqrt((4.1+r.rubber*2.0)*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
-  inp.brake=r.vs>maxV*1.03?1:0;
+  const maxV=Math.sqrt((4.9+r.rubber*2.6)*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
+  inp.brake=r.vs>maxV*1.05?1:0;
   inp.pedal=inp.brake?0:1;
 
   let target;
@@ -1460,7 +1462,7 @@ function aiThink(r,dt){
     if(gap>2.5){
       const closeV=player.vs+1.5+gap*0.55;
       if(r.vs>closeV){ inp.brake=1; inp.pedal=0; }
-      else if(gap>9&&!inp.brake&&r.grounded&&r.meter>BOOST_MIN+4) inp.boost=true;
+      else if(gap>6&&!inp.brake&&r.grounded&&r.meter>BOOST_MIN+2) inp.boost=true;
     }
     else if(gap<-3){ inp.pedal=0; inp.brake=1; }
     else {
@@ -1470,8 +1472,10 @@ function aiThink(r,dt){
     // steer straight onto the player's handlebars
     target=player.lat;
   } else {
-    // racing line: cut inside + personal line + wander
-    target=clamp(-cAhead*260,-3.3,3.3)+r.lineBias+Math.sin(gameTime*r.wf+r.phase)*r.wamp;
+    // racing line: cut inside + personal line + wander (a chasing rider locks
+    // in and stops meandering)
+    target=clamp(-cAhead*260,-3.3,3.3)+r.lineBias
+      +Math.sin(gameTime*r.wf+r.phase)*r.wamp*Math.max(0,1-r.rubber*1.6);
     for(const o of riders){
       if(o===r) continue;
       const ds=o.s-r.s;
@@ -1480,7 +1484,7 @@ function aiThink(r,dt){
     // spend the meter like a rival: surge to close on the player, or to
     // answer them in the endgame
     if(!inp.brake&&r.grounded&&r.meter>BOOST_MIN+6&&Math.abs(cAhead)<0.011&&
-       (gap>12||(r.s>FINISH_S*0.72&&gap>-25))) inp.boost=true;
+       (gap>12||(r.s>FINISH_S*0.65&&gap>-35))) inp.boost=true;
   }
   // dodge slalom trees ahead
   const b0=Math.floor(r.s/10);
@@ -1508,7 +1512,7 @@ function aiThink(r,dt){
       const rem=predictAirRemaining(r)-0.15;
       let pick=null;
       for(const k of ['heel','backflip','superman','nohander']) if(TRICKS[k].dur<rem){ pick=k; break; }
-      if(!pick&&Math.random()<r.def.crashy*0.5) pick='nohander';
+      if(!pick&&Math.random()<r.def.crashy*0.35) pick='nohander';
       if(pick) startTrick(r,pick);
     }
   }
@@ -1523,7 +1527,7 @@ function aiThink(r,dt){
         tryStrike(r,r.strikeKind);
       } else { if(r.strikeKind==='kick') r.kickAnimT=0; else r.punchAnimT=0;
         if(Math.abs(r.s-player.s)<40) AudioSys.whoosh(); }
-      r.punchCd=r.revengeT>0?1.1+Math.random()*0.9:r.grudge?5+Math.random()*3:9+Math.random()*6;
+      r.punchCd=r.revengeT>0?0.7+Math.random()*0.5:r.grudge?3.5+Math.random()*2.5:6+Math.random()*4;
     }
   } else if(r.punchCd<=0&&r.grounded){
     if(hunting){
@@ -1541,8 +1545,8 @@ function aiThink(r,dt){
         const ds=Math.abs(o.s-r.s), dl=Math.abs(o.lat-r.lat);
         if(ds<2.0&&dl<1.3&&Math.abs(o.y-r.y)<PUNCH_DY){
           const isP=o.isPlayer;
-          if(isP&&gameTime-lastAIPunchOnPlayer<4) continue;
-          if(Math.random()<r.def.aggr*(isP?(r.grudge?2.5:1):0.3)*dt*2.2){
+          if(isP&&gameTime-lastAIPunchOnPlayer<3) continue;
+          if(Math.random()<r.def.aggr*(isP?(r.grudge?3.2:1.6):0.3*(1-r.rubber))*dt*2.2){
             r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
             r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
             if(isP) AudioSys.tell();   // audible warning when you're the target
@@ -2044,8 +2048,8 @@ function riderVisual(r,dt){
       }
     }
     v.person.position.z=v.personHome.z+pz; v.person.position.y=v.personHome.y+py;
-    // boost glow — and a red smoulder on anyone hunting for payback
-    v.mat.emissive.setHex(r.boosting?0x662200:(r.revengeT>0?0x3c0000:0x000000));
+    // boost glow — and a red burn on anyone hunting for payback
+    v.mat.emissive.setHex(r.boosting?0x662200:(r.revengeT>0?0x550000:0x000000));
   }
   // blob shadow
   const gnd=groundHeight(r.s,r.lat);
