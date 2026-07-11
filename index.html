@@ -619,10 +619,10 @@ window.addEventListener('keydown',e=>{
     pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); // pull back in the air to flip
   }
   else if(e.code==='Enter') pressQueue.enter=true;
-  else if(e.code==='KeyR'){ if(state!=='title') resetRace(); }
-  else if(e.code==='Escape'){ if(state!=='title'&&state!=='boot') goTitle(); }
-  else if(e.code==='KeyD'&&state==='title'){ setMode('daily'); resetRace(); }
-  else if(e.code==='KeyC'&&state==='title'){ setMode('classic'); resetRace(); }
+  else if(e.code==='KeyR'){ if(!DEMO) resetRace(); }
+  else if(e.code==='Escape'){ if(!DEMO&&state!=='boot') goTitle(); }
+  else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
+  else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyG') ghostShow=!ghostShow;
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT'){ document.getElementById('crt').classList.toggle('off');
@@ -663,8 +663,8 @@ function initTouch(){
   bind('tT2',()=>{ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); });
   bind('tT3',()=>{ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); });
   bind('tT4',()=>{ pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); });
-  bind('tRestart',()=>{ if(state!=='title') resetRace(); });
-  bind('tHome',()=>{ if(state!=='title') goTitle(); });
+  bind('tRestart',()=>{ if(!DEMO) resetRace(); });
+  bind('tHome',()=>{ if(!DEMO) goTitle(); });
   bind('tMute',()=>AudioSys.toggleMute());
   bind('tFull',()=>{
     if(document.fullscreenElement){ document.exitFullscreen().catch(()=>{}); }
@@ -678,9 +678,9 @@ function initTouch(){
   // tap anywhere: start from title / race again from results — and use that same
   // gesture to (re)enter fullscreen, since browsers only honour it inside one
   window.addEventListener('pointerdown',()=>{ AudioSys.ensure();
-    if(state==='title'||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt)){
+    if(DEMO||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt)){
       pressQueue.enter=true;
-      if(state==='title') enterFullscreen();
+      if(DEMO) enterFullscreen();
     }
   });
 }
@@ -1122,7 +1122,7 @@ function buildGhost(){
 }
 function updateGhost(){
   if(!ghostViz) return;
-  const on=ghostShow&&ghostData&&state==='racing'&&!FAST;
+  const on=ghostShow&&ghostData&&state==='racing'&&!FAST&&!DEMO;
   if(!on){ ghostViz.root.visible=false; return; }
   const n=Math.floor(ghostData.length/3);
   const T=raceTime/GHOST_DT;
@@ -1369,7 +1369,7 @@ function tryStrike(attacker,kind){
     const side=attacker.strikeSide;
     best.vlat+=side*(kind==='kick'?4.5:3);
     crashRider(best,'punched');
-    if(attacker.isPlayer||best.isPlayer) hitStopT=0.075;  // a landed hit crunches time
+    if(!DEMO&&(attacker.isPlayer||best.isPlayer)) hitStopT=0.075;  // a landed hit crunches time
     if(attacker.isPlayer) RACE_STATS.decked++;
     if(nearPlayer||best.isPlayer) AudioSys.strikeLand(attacker.isPlayer||best.isPlayer?1:0.5);
     if(attacker.isPlayer){
@@ -1529,6 +1529,7 @@ function playerInput(){
 let state='boot', countT=0, raceTime=0, gameTime=0, shake=0, fps=60, FAST=false;
 let lastCountDigit=-1, resultsShownAt=-1;
 let racesRun=0, countDur=3.8, prevPlayerPos=0, posPopupCd=0, hitStopT=0;
+let DEMO=false, demoSubject=null, demoCutT=0, demoShot=0;
 // per-race player stats (results screen) + all-time bests (one local key)
 const RACE_STATS={ topSpeed:0, biggestAir:0, tricksLanded:0, decked:0, bestCombo:0 };
 const SAVE_KEY='downhill-mayhem-best';
@@ -1567,13 +1568,9 @@ function setMode(mode,seed){
 }
 
 function goTitle(){
-  state='title';
   AudioSys.stopMusic();
-  document.getElementById('title').classList.remove('hidden');
-  document.getElementById('hud').classList.add('hidden');
-  document.getElementById('results').classList.add('hidden');
-  document.getElementById('count').classList.add('hidden');
   refreshTitle();
+  startDemoRace();
 }
 function refreshTitle(){
   const be=document.getElementById('bestLine');
@@ -1587,7 +1584,7 @@ function refreshTitle(){
     MODE==='classic'?((IS_TOUCH?'TAP HERE':'PRESS D')+' — TODAY\'S DAILY MOUNTAIN ('+seedLabel(dailySeed())+')')
                     :((IS_TOUCH?'TAP HERE':'PRESS C')+' — BACK TO THE CLASSIC MOUNTAIN');
 }
-function resetRace(){
+function resetRiders(){
   // fresh jersey colours every race
   const pool=JERSEY_POOL.slice();
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
@@ -1608,20 +1605,34 @@ function resetRace(){
   }
   raceTime=0; countT=0; lastCountDigit=-1; resultsShownAt=-1; shake=0;
   ghostRec=[]; AudioSys.stopMusic();
-  countDur=racesRun===0?3.8:2.0; racesRun++;   // full ceremony once, quick re-entry after
   prevPlayerPos=0; posPopupCd=0; hitStopT=0;
   RACE_STATS.topSpeed=0; RACE_STATS.biggestAir=0; RACE_STATS.tricksLanded=0;
   RACE_STATS.decked=0; RACE_STATS.bestCombo=0;
   document.getElementById('popups').innerHTML='';
   document.getElementById('results').classList.add('hidden');
+  document.getElementById('count').classList.add('hidden');
+  camSnap=true;
+}
+function resetRace(){
+  DEMO=false;
+  resetRiders();
+  countDur=racesRun===0?3.8:2.0; racesRun++;   // full ceremony once, quick re-entry after
   document.getElementById('title').classList.add('hidden');
   document.getElementById('hud').classList.remove('hidden');
   state='countdown';
-  camSnap=true;
+}
+// attract mode: the title screen is a broadcast overlay on a race that runs itself
+function startDemoRace(){
+  resetRiders();
+  DEMO=true; state='racing';
+  demoSubject=null; demoCutT=0;
+  document.getElementById('title').classList.remove('hidden');
+  document.getElementById('hud').classList.add('hidden');
 }
 function finishRider(r){
   r.finished=true; r.finishTime=raceTime;
   if(r.isPlayer){
+    if(DEMO) return;   // the attract bot's runs count for nothing
     state='finished';
     AudioSys.stopMusic();
     const newPB=!BEST.time||r.finishTime<BEST.time;
@@ -1681,9 +1692,9 @@ function updateRace(dt){
   }
   if(state==='racing'||state==='finished'){
     raceTime+=dt; // race clock keeps running for AI results
-    if(state==='racing'&&!player.finished&&raceTime>=ghostRec.length/3*GHOST_DT)
+    if(state==='racing'&&!DEMO&&!player.finished&&raceTime>=ghostRec.length/3*GHOST_DT)
       ghostRec.push(player.s,player.lat,player.y);
-    playerInput();
+    if(DEMO) aiThink(player,dt); else playerInput();
     // slipstream: tuck in close behind a rider on the same line for a tow
     for(const r of riders){
       let tow=false;
@@ -1703,7 +1714,7 @@ function updateRace(dt){
     updatePositions();
     // surface the race drama: every overtake (or lost place) pops
     posPopupCd-=dt;
-    if(state==='racing'){
+    if(state==='racing'&&!DEMO){
       RACE_STATS.topSpeed=Math.max(RACE_STATS.topSpeed,player.vs*3.6);
       const pos=player.racePos;
       if(pos!==prevPlayerPos){
@@ -1723,10 +1734,12 @@ function updateRace(dt){
       if(resultsShownAt<0) resultsShownAt=gameTime+0.9;
       if(gameTime>=resultsShownAt) showResults();
     }
+    // the attract race loops forever
+    if(DEMO&&(raceTime>210||riders.every(r=>r.finished))) startDemoRace();
   }
   if(pressQueue.enter){
     pressQueue.enter=false;
-    if(state==='title'||state==='finished'&&gameTime>=resultsShownAt) resetRace();
+    if(DEMO||state==='finished'&&gameTime>=resultsShownAt) resetRace();
   }
 }
 function showResults(){
@@ -1837,10 +1850,10 @@ function updateHud(){
   if(state==='racing'&&raceTime>9&&hudEls.hint.style.opacity!=='0') hudEls.hint.style.opacity='0';
   if(state==='countdown') hudEls.hint.style.opacity='1';
   if(IS_TOUCH) touchUIEl.classList.toggle('hidden',
-    state==='title'||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt));
+    DEMO||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt));
 }
 function popup(text,cls){
-  if(FAST) return;
+  if(FAST||DEMO) return;
   const box=document.getElementById('popups');
   const d=document.createElement('div');
   d.className='pop '+(cls||''); d.textContent=text;
@@ -1966,13 +1979,48 @@ function riderVisual(r,dt){
 
 // ------------------------------------------------------------ camera/fx ----
 let camSnap=true, camFov=74;
-const camPos=new THREE.Vector3(), camLook=new THREE.Vector3(), tmpV=new THREE.Vector3();
+const camPos=new THREE.Vector3(), camLook=new THREE.Vector3(), tmpV=new THREE.Vector3(), demoV=new THREE.Vector3();
+// spectator picks: airborne riders first, then the tightest duel, then the leader
+function pickDemoSubject(){
+  for(const r of riders) if(!r.crashed&&!r.grounded&&r.airTime>0.25) return r;
+  let best=null,bd=99;
+  const act=riders.filter(r=>!r.finished&&!r.crashed);
+  for(const a of act) for(const b of act){
+    if(a===b) continue;
+    const d=Math.abs(a.s-b.s)+Math.abs(a.lat-b.lat)*2;
+    if(d<bd){ bd=d; best=a.s<b.s?a:b; }
+  }
+  if(best&&bd<10) return best;
+  return riders.find(r=>r.racePos===1&&!r.finished)||act[0]||riders[0];
+}
 function updateCamera(dt){
   const p=player;
   const c=sampleTrack(p.s,TMP_CAM);
   const fwdX=Math.sin(c.h), fwdZ=Math.cos(c.h);
   worldPos(p.s,p.lat,p.y,tmpV);
-  if(state==='title'||state==='finished'&&gameTime>=resultsShownAt+0.5){
+  if(DEMO){
+    demoCutT-=dt;
+    if(demoCutT<=0||!demoSubject||demoSubject.finished){
+      demoSubject=pickDemoSubject(); demoShot=(demoShot+1)%3;
+      demoCutT=demoShot===2?3.5:5; camSnap=true;
+    }
+    const S=demoSubject;
+    const cs=sampleTrack(S.s,TMP_CAM), fX=Math.sin(cs.h), fZ=Math.cos(cs.h);
+    worldPos(S.s,S.lat,S.y,tmpV);
+    if(demoShot===0){        // chase dolly
+      demoV.set(tmpV.x-fX*7,Math.max(tmpV.y+2.7,groundHeight(S.s-7,S.lat*0.7)+1.3),tmpV.z-fZ*7);
+    } else if(demoShot===1){ // trackside dolly
+      const cl=S.lat>0?S.lat-10:S.lat+10;
+      worldPos(S.s+2,cl,groundHeight(S.s+2,cl)+2.4,demoV);
+    } else {                 // leading dolly, looking back
+      const cl=clamp(S.lat,-6,6);
+      worldPos(S.s+12,cl,groundHeight(S.s+12,cl)+2.1,demoV);
+    }
+    if(camSnap){ camPos.copy(demoV); camSnap=false; }
+    else { const k=1-Math.exp(-dt*6); camPos.lerp(demoV,k); }
+    camLook.set(tmpV.x+(demoShot===0?fX*2:0),tmpV.y+1.1,tmpV.z+(demoShot===0?fZ*2:0));
+    camFov=lerp(camFov,70,Math.min(1,dt*3));
+  } else if(state==='finished'&&gameTime>=resultsShownAt+0.5){
     const a=gameTime*0.25;
     camPos.set(tmpV.x+Math.cos(a)*9,tmpV.y+3.2,tmpV.z+Math.sin(a)*9);
     camLook.copy(tmpV).add(new THREE.Vector3(0,1,0));
@@ -2001,7 +2049,8 @@ function updateCamera(dt){
   // peaks sit just below eye level on the horizon: you are UP a mountain
   mountains.position.set(camera.position.x,camera.position.y-22,camera.position.z);
   // sunlight warms as you descend: crisp alpine light up top, golden valley below
-  const fAlt=clamp(player.s/FINISH_S,0,1);
+  const refR=DEMO&&demoSubject?demoSubject:player;
+  const fAlt=clamp(refR.s/FINISH_S,0,1);
   const cold=clamp((0.32-fAlt)/0.32,0,1), warm=clamp((fAlt-0.68)/0.32,0,1);
   SUN.color.copy(SUN_MID);
   if(cold>0) SUN.color.lerp(SUN_COLD,cold);
@@ -2012,7 +2061,7 @@ function drawFx(){
   const w=fxCanvas.width,h=fxCanvas.height;
   const on=player.boosting||player.vs>25||player.draftT>0.55;
   fxCtx.clearRect(0,0,w,h);
-  if(!on||state==='title') return;
+  if(!on||DEMO) return;
   const inten=player.boosting?1:Math.max(clamp((player.vs-25)/7,0,0.7),player.draftT*0.4);
   fxCtx.strokeStyle='rgba(255,255,255,'+(0.28*inten)+')';
   fxCtx.lineWidth=2;
@@ -2029,7 +2078,6 @@ function drawFx(){
 // ------------------------------------------------------------ main loop ----
 function simFrame(dt){
   updateRace(dt);
-  if(state==='title'){ /* idle riders at the gate */ }
 }
 let lastT=performance.now();
 function frame(now){
@@ -2068,10 +2116,8 @@ function boot(){
   initHud();
   initTouch();
   loadBestFor();
-  // place riders at the gate for the title backdrop
-  for(const r of riders){ r.y=groundHeight(r.s,r.lat); riderVisual(r,0.016); }
   refreshTitle();
-  state='title';
+  startDemoRace();
   requestAnimationFrame(frame);
   console.log('%cDOWNHILL MAYHEM','font:italic 900 22px Arial;color:#ffd23f;',
     '— fan-made tribute, all assets procedural.');
@@ -2085,7 +2131,7 @@ window.GAME={
   get ramps(){ return ramps; }, get scene(){ return scene; }, stats:STATS,
   get best(){ return BEST; }, raceStats:RACE_STATS,
   get hitStopT(){ return hitStopT; }, get countdownDur(){ return countDur; },
-  get mode(){ return MODE; }, get seed(){ return CUR_SEED; },
+  get mode(){ return MODE; }, get seed(){ return CUR_SEED; }, get demo(){ return DEMO; },
   audioState(){ return AudioSys.ctx?AudioSys.ctx.state:'none'; },
   get musicOn(){ return AudioSys.music.on; },
   get ghostSamples(){ return ghostData?Math.floor(ghostData.length/3):0; },

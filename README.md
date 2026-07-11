@@ -76,8 +76,9 @@ screen — it copies a link that carries the exact mountain and your time. Anyon
 it sees your time as a target on their HUD and gets a BEATEN/missed verdict at the line.
 The whole challenge lives in the link; there is no server and no account.
 
-**The rest of the arsenal:** your best run rides with you as a translucent ghost (`G`
-toggles it). A synthesized drum-and-bass loop kicks in at GO and intensifies in the
+**The rest of the arsenal:** the title screen is a live broadcast — an AI-only race runs
+behind the menu with spectator camera cuts, arcade attract-mode style, until you press
+start. Your best run rides with you as a translucent ghost (`G` toggles it). A synthesized drum-and-bass loop kicks in at GO and intensifies in the
 final stretch. Tuck in behind a rider to slipstream, then swing. Butter a landing on
 the downslope for a CLEAN bonus. The descent itself changes as you drop — frosty alpine
 up top, pine forest in the middle, warm canyon at the bottom. Finish within half a
