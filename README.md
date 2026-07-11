@@ -6,7 +6,7 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 <p align="center">
   <a href="https://pranshuparmar.github.io/downhill-mayhem/">
-    <img src="media/demo.gif" alt="Ten seconds of DOWNHILL MAYHEM: hitting a ramp, throwing a Superman, boosting, and punching a rival off their bike" width="600">
+    <img src="media/demo.gif" alt="Ten seconds of DOWNHILL MAYHEM: hitting a ramp, throwing a Superman, boosting, and punching a rival off their bike" width="480">
   </a>
   <br>
   <b><a href="https://pranshuparmar.github.io/downhill-mayhem/">▶ PLAY NOW — free, in your browser</a></b>
@@ -21,14 +21,15 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 - **In your browser (desktop or phone):** [pranshuparmar.github.io/downhill-mayhem](https://pranshuparmar.github.io/downhill-mayhem/)
 - **On itch.io:** [pranshuparmar.itch.io/downhill-mayhem](https://pranshuparmar.itch.io/downhill-mayhem)
-- **Locally:** just double-click `index.html`. (It needs internet access once, to fetch
-  the Three.js library from its CDN — everything else is inside the file.)
+- **Locally:** just double-click `index.html` (keep it next to the `vendor/` folder).
+  Fully offline — nothing is fetched from anywhere.
 
 📱 On phones and tablets, touch controls appear automatically: steer and brake with the
 left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
 boost is tap-to-toggle, and the game asks you to rotate to landscape.
 
-The whole game is a single self-contained `index.html` — no build step, no npm, no server.
+The whole game is one `index.html` plus a vendored copy of three.js — no build step,
+no npm, no server, no network.
 
 ## Controls
 
@@ -76,9 +77,10 @@ The whole challenge lives in the link; there is no server and no account.
 
 ## Tech notes
 
-- Single file: HTML + CSS + JS. Only external dependency is
-  [Three.js r128](https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js)
-  (classic global-script build, so it also works from `file://`).
+- All game code lives in one HTML file. The only dependency, three.js r128
+  (classic global-script build), is vendored at `vendor/three.min.js`
+  (MIT — see `vendor/THREE.LICENSE`), so the game works from `file://` and
+  keeps working even if every CDN on Earth disappears.
 - Seeded procedural course (~2.3 km, ~16% average grade) — the same mountain every run:
   sweeping turns, steep chutes, step-down drops, wooden kickers, and a broad rolling
   hillside around the racing line.
@@ -88,5 +90,5 @@ The whole challenge lives in the link; there is no server and no account.
 - PS2-era look on purpose: chunky flat-shaded low-poly terrain with vertex colours,
   aggressive distance fog, instanced pine trees and boulders, blob shadows, and an
   optional CRT scanline overlay.
-- Zero accounts, zero ads, zero analytics, zero external calls beyond the Three.js CDN.
-  Your best time lives in a single `localStorage` key on your own machine.
+- Zero accounts, zero ads, zero analytics, zero external calls of any kind.
+  Your best times live in `localStorage` on your own machine.

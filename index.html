@@ -243,7 +243,7 @@
     <div id="pressEnter">PRESS ENTER</div>
     <div id="modeSwap"></div>
     <div id="foot"><a id="ghLink" href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a><br>
-      Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · Three.js via CDN</div>
+      Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · three.js r128 (MIT) bundled</div>
   </div>
 
   <div id="touchUI" class="hidden">
@@ -279,7 +279,7 @@
   <div id="fatal" class="hidden"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="vendor/three.min.js"></script>
 <script>
 'use strict';
 /* ============================================================================
@@ -1028,7 +1028,7 @@ function makeRider(def,idx){
     trick:null, trickT:0, chain:0, pendingMeter:0, pendingNames:[], meter:0, boosting:false, boostLatch:false,
     // crash/combat
     crashed:false, crashT:0, invuln:0, crashSpinX:0, crashSpinY:0,
-    punchAnimT:-1, kickAnimT:-1, strikeKind:'punch', windupT:-1, windupTarget:null,
+    punchAnimT:-1, kickAnimT:-1, strikeKind:'punch', strikeSide:1, windupT:-1, windupTarget:null,
     punchCd:idx===0?0:3+idx*1.7,
     // ai
     phase:Math.random()*6.28, wf:0.25+Math.random()*0.3, wamp:1.2+Math.random()*1.6,
@@ -1258,11 +1258,14 @@ function tryStrike(attacker,kind){
     const ds=Math.abs(o.s-attacker.s), dl=Math.abs(o.lat-attacker.lat), dy=Math.abs(o.y-attacker.y);
     if(ds<PUNCH_S&&dl<PUNCH_LAT&&dy<PUNCH_DY&&ds+dl<bestD){ best=o; bestD=ds+dl; }
   }
+  // the swing aims at the victim's side (or the way you're steering, on a whiff)
+  attacker.strikeSide=best?(Math.sign(best.lat-attacker.lat)||1)
+    :((attacker.inp&&attacker.inp.steer)?Math.sign(attacker.inp.steer):(attacker.strikeSide||1));
   if(kind==='kick') attacker.kickAnimT=0; else attacker.punchAnimT=0;
   const nearPlayer=attacker.isPlayer||Math.abs(attacker.s-player.s)<40;
   if(best){
     STATS.punchesLanded++;
-    const side=Math.sign(best.lat-attacker.lat)||1;
+    const side=attacker.strikeSide;
     best.vlat+=side*(kind==='kick'?4.5:3);
     crashRider(best,'punched');
     if(attacker.isPlayer||best.isPlayer) hitStopT=0.075;  // a landed hit crunches time
@@ -1382,6 +1385,7 @@ function aiThink(r,dt){
         if(isP&&gameTime-lastAIPunchOnPlayer<4) continue;
         if(Math.random()<r.def.aggr*(isP?1:0.3)*dt*2.2){
           r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
+          r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
           if(isP) AudioSys.tell();   // audible warning when you're the target
           break;
         }
@@ -1774,25 +1778,40 @@ function riderVisual(r,dt){
       aRx=lerp(aRx,p.aRx,w); aRz=lerp(aRz,p.aRz,w);
       lLx=lerp(lLx,p.lLx,w); lRx=lerp(lRx,p.lRx,w); pz=p.pz*w; py=p.py*w;
     }
-    // punch / windup override (right arm)
-    if(r.windupT>=0){ aRx=-2.3; aRz=-0.5; }
-    if(r.punchAnimT>=0){
-      r.punchAnimT+=dt;
-      const t=r.punchAnimT/0.3;
-      if(t>=1) r.punchAnimT=-1;
-      else { aRx=lerp(-2.2,-0.6,t); aRz=lerp(-0.9,0.5,t); }
-    }
-    // kick: right leg swings out and forward
-    let lRz=0;
-    if(r.kickAnimT>=0){
-      r.kickAnimT+=dt;
-      const t=r.kickAnimT/0.32;
-      if(t>=1) r.kickAnimT=-1;
-      else { const k=Math.sin(Math.min(t,1)*Math.PI); lRx=lerp(lRx,-2.1,k); lRz=-0.55*k; }
-    }
-    v.torsoG.rotation.x=tor;
+    v.torsoG.rotation.x=tor; v.torsoG.rotation.y=0;
     v.armL.rotation.set(aLx,0,aLz); v.armR.rotation.set(aRx,0,aRz);
-    v.legL.rotation.set(lLx,0,0); v.legR.rotation.set(lRx,0,lRz);
+    v.legL.rotation.set(lLx,0,0); v.legR.rotation.set(lRx,0,0);
+
+    // strikes aim at the victim's side. The model's x axis is mirrored versus
+    // screen space, so a screen-right (lat+) strike uses the mesh at x<0.
+    const sd=r.strikeSide||1, zs=-sd;
+    const arm=sd>0?v.armL:v.armR, leg=sd>0?v.legL:v.legR;
+    if(r.windupT>=0){                       // cocked back, telegraphed
+      arm.rotation.set(-0.35,0,zs*1.25);
+      v.torsoG.rotation.y=zs*0.35;
+    }
+    if(r.punchAnimT>=0){                    // full haymaker into the twist
+      r.punchAnimT+=dt;
+      const t=r.punchAnimT/0.38;
+      if(t>=1) r.punchAnimT=-1;
+      else{
+        const k=Math.sin(Math.min(t,1)*Math.PI);
+        arm.rotation.set(lerp(-0.6,-1.75,k),0,zs*1.55*k);
+        v.torsoG.rotation.y=-zs*0.6*k;
+        v.person.rotation.z=zs*0.14*k;
+      }
+    } else if(r.kickAnimT>=0){              // leg swings out high to the side
+      r.kickAnimT+=dt;
+      const t=r.kickAnimT/0.4;
+      if(t>=1) r.kickAnimT=-1;
+      else{
+        const k=Math.sin(Math.min(t,1)*Math.PI);
+        leg.rotation.set(lerp(-0.5,-1.35,k),0,zs*1.6*k);
+        v.torsoG.rotation.y=-zs*0.4*k;
+        v.torsoG.rotation.x=tor+0.18*k;
+        v.person.rotation.z=zs*0.1*k;
+      }
+    }
     v.person.position.z=v.personHome.z+pz; v.person.position.y=v.personHome.y+py;
     // boost glow
     v.mat.emissive.setHex(r.boosting?0x662200:0x000000);
@@ -1889,9 +1908,8 @@ function boot(){
   if(typeof THREE==='undefined'){
     const f=document.getElementById('fatal');
     f.classList.remove('hidden');
-    f.innerHTML='<div><b>DOWNHILL MAYHEM</b> needs Three.js from its CDN.<br><br>'+
-      'Connect to the internet once so the browser can fetch it, then reload.<br>'+
-      '<span style="opacity:.7">(The game itself is a single offline-friendly file — only the 3D library comes from cdnjs.)</span></div>';
+    f.innerHTML='<div><b>DOWNHILL MAYHEM</b> could not load its bundled three.js.<br><br>'+
+      'Keep <code>index.html</code> next to its <code>vendor/</code> folder and reload.</div>';
     return;
   }
   if(CHAL){ MODE=CHAL.mode; CUR_SEED=CHAL.seed; }   // a challenge link picks the mountain
