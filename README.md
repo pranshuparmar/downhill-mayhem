@@ -26,7 +26,8 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 📱 On phones and tablets, touch controls appear automatically: steer and brake with the
 left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
-boost is tap-to-toggle, and the game asks you to rotate to landscape.
+boost is tap-to-toggle, and the game asks you to rotate to landscape. The top button
+row covers the PB ghost (👻), mute, restart, home and fullscreen.
 
 The whole game is a single self-contained `index.html` — three.js included inside it —
 no build step, no npm, no server, no network.

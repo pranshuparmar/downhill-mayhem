@@ -171,6 +171,7 @@
   #tT3 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   #tT4 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
+  #tGhost { top:calc(12px + env(safe-area-inset-top)); right:calc(220px + env(safe-area-inset-right)); }
   #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(168px + env(safe-area-inset-right)); }
   #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(116px + env(safe-area-inset-right)); }
   #tHome { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
@@ -227,7 +228,7 @@
     <div id="trickWrap" class="hidden"><div id="trickFill"></div></div>
     <div id="count" class="hidden"></div>
     <div id="muteTag" class="hidden">🔇 MUTED</div>
-    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; ↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute</div>
+    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; ↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute &nbsp;·&nbsp; G ghost</div>
   </div>
 
   <div id="title">
@@ -264,6 +265,7 @@
     <div class="tbtn trick" id="tT2">SUPER<br>MAN</div>
     <div class="tbtn trick" id="tT3">HEEL<br>CLICK</div>
     <div class="tbtn trick" id="tT4">BACK<br>FLIP</div>
+    <div class="tbtn tiny" id="tGhost">👻</div>
     <div class="tbtn tiny" id="tMute">🔊</div>
     <div class="tbtn tiny" id="tRestart">⟳</div>
     <div class="tbtn tiny" id="tHome">⌂</div>
@@ -628,7 +630,7 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='Escape'){ if(!DEMO&&state!=='boot') goTitle(); }
   else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
   else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
-  else if(e.code==='KeyG') ghostShow=!ghostShow;
+  else if(e.code==='KeyG'){ ghostShow=!ghostShow; paintGhostBtn(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT'){ document.getElementById('crt').classList.toggle('off');
     document.getElementById('vig').classList.toggle('off'); }
@@ -671,6 +673,12 @@ function initTouch(){
   bind('tRestart',()=>{ if(!DEMO) resetRace(); });
   bind('tHome',()=>{ if(!DEMO) goTitle(); });
   bind('tMute',()=>AudioSys.toggleMute());
+  // ghost visibility is a latch like boost, not a momentary press
+  const tGhostEl=document.getElementById('tGhost');
+  tGhostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
+    ghostShow=!ghostShow; paintGhostBtn(); });
+  tGhostEl.addEventListener('contextmenu',e=>e.preventDefault());
+  paintGhostBtn();
   bind('tFull',()=>{
     if(document.fullscreenElement){ document.exitFullscreen().catch(()=>{}); }
     else enterFullscreen();
@@ -1600,6 +1608,8 @@ let BEST={};
 // ghost of your PB run: (s,lat,y) sampled at 10 Hz, stored with the best time
 const GHOST_DT=0.1;
 let ghostRec=[], ghostData=null, ghostShow=true, ghostViz=null;
+// the 👻 top button dims while the ghost is hidden (keyboard G repaints it too)
+function paintGhostBtn(){ const el=document.getElementById('tGhost'); if(el) el.style.opacity=ghostShow?'':'0.35'; }
 function loadGhost(){ ghostData=(BEST.ghost&&BEST.ghost.length>30)?BEST.ghost:null; }
 function bestKey(){ return MODE==='classic'?SAVE_KEY:SAVE_KEY+'-d'+CUR_SEED; }
 function loadBestFor(){ try{ BEST=JSON.parse(localStorage.getItem(bestKey())||'{}')||{}; }catch(e){ BEST={}; } loadGhost(); }
@@ -2223,6 +2233,7 @@ window.GAME={
   get musicOn(){ return AudioSys.music.on; },
   get windGain(){ return AudioSys.wind?AudioSys.wind.gain.value:0; },
   get ghostSamples(){ return ghostData?Math.floor(ghostData.length/3):0; },
+  get ghostShow(){ return ghostShow; },
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   groundAt(s,lat){ return groundHeight(s,lat); },
