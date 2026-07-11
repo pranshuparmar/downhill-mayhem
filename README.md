@@ -84,8 +84,8 @@ start. Your best run rides with you as a translucent ghost (`G` toggles it). A s
 final stretch. Tuck in behind a rider to slipstream, then swing. Butter a landing on
 the downslope for a CLEAN bonus. The descent itself changes as you drop — frosty alpine
 up top, pine forest in the middle, warm canyon at the bottom. Finish within half a
-second of anyone and you get the PHOTO FINISH freeze; every race ends with an arcade
-rank stamp (D to S); and any rival you deck drops the race plan and *hunts you* —
+second of anyone and you get the PHOTO FINISH freeze; every race ends with a graded
+rank stamp (F to A+, with a verdict); and any rival you deck drops the race plan and *hunts you* —
 smouldering red, waiting if they must — until they've knocked you down and honour is
 settled. Then they go back to racing.
 

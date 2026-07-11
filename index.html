@@ -131,7 +131,9 @@
     padding:0 16px; border:4px solid currentColor; border-radius:8px; transform:rotate(12deg);
     background:rgba(0,0,0,.65); text-shadow:3px 3px 0 rgba(0,0,0,.8); }
   #rankStamp.S { color:#ffd23f; } #rankStamp.A { color:#59ff7a; } #rankStamp.B { color:#6fc3ff; }
-  #rankStamp.C { color:#fff; } #rankStamp.D { color:#9aa0a8; }
+  #rankStamp.C { color:#fff; } #rankStamp.D { color:#ff7a6f; }
+  #rankStamp .rg { line-height:1.05; text-align:center; }
+  #rankStamp .rl { font-size:11px; letter-spacing:1.5px; text-align:center; margin:-3px 0 8px; font-weight:700; }
   #resTitle { font-style:italic; font-size:44px; color:#ffd23f; text-shadow:3px 3px 0 #000; text-align:center; letter-spacing:1px; }
   #resSub { text-align:center; font-size:15px; margin:2px 0 4px; color:#9fd; font-style:italic; }
   #resRecap { text-align:center; font-size:13px; margin:0 0 4px; color:#cfe3ff; font-style:italic; max-width:440px; }
@@ -510,7 +512,7 @@ const AudioSys={
       const w=mk('lowpass',600); this.wind=w.g; this.windF=w.f;
       const dd=mk('lowpass',240); this.dirt=dd.g; this.dirtF=dd.f;
       const bb=mk('bandpass',1400); this.boost=bb.g;
-      this.musicGain=ctx.createGain(); this.musicGain.gain.value=0.16; this.musicGain.connect(this.master);
+      this.musicGain=ctx.createGain(); this.musicGain.gain.value=0.26; this.musicGain.connect(this.master);
       this.started=true;
       if(ctx.state==='suspended') ctx.resume().catch(()=>{});
     }catch(e){ /* audio is optional */ }
@@ -1844,12 +1846,19 @@ function showResults(){
   document.getElementById('resRecap').textContent=raceRecap(order,place);
   document.getElementById('chalBtn').style.display=player.finished?'block':'none';
   const rs=document.getElementById('rankStamp');
-  if(player.finished&&player.rank){ rs.textContent=player.rank; rs.className=player.rank; rs.style.display='block'; }
-  else rs.style.display='none';
+  if(player.finished&&player.rank){
+    const d=RANK_DISPLAY[player.rank];
+    rs.innerHTML='<div class="rg">'+d[0]+'</div><div class="rl">'+d[1]+'</div>';
+    rs.className=player.rank; rs.style.display='block';
+  } else rs.style.display='none';
   document.getElementById('resStats').textContent=
     'TOP '+Math.round(RACE_STATS.topSpeed)+' km/h · AIR '+RACE_STATS.biggestAir.toFixed(1)+'s · TRICKS '
     +RACE_STATS.tricksLanded+' · COMBO ×'+RACE_STATS.bestCombo+' · DECKED '+RACE_STATS.decked;
 }
+// the internal tiers (S..D) keep their stamp colours; on screen they read as
+// school grades with a verdict, so nobody has to know what an "S rank" is
+const RANK_DISPLAY={ S:['A+','LEGENDARY'], A:['A','GREAT RUN'], B:['B','SOLID RUN'],
+  C:['C','SCRAPPY'], D:['F','MAULED'] };
 // one line of colour commentary under the standings
 function raceRecap(order,place){
   const S=RACE_STATS, me=order.indexOf(player);
@@ -2234,6 +2243,7 @@ window.GAME={
   get windGain(){ return AudioSys.wind?AudioSys.wind.gain.value:0; },
   get ghostSamples(){ return ghostData?Math.floor(ghostData.length/3):0; },
   get ghostShow(){ return ghostShow; },
+  get musicVol(){ return AudioSys.musicGain?AudioSys.musicGain.gain.value:0; },
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   groundAt(s,lat){ return groundHeight(s,lat); },
