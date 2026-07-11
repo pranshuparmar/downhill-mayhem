@@ -1476,8 +1476,10 @@ function aiThink(r,dt){
     }
     else if(gap<-3){ inp.pedal=0; inp.brake=1; }
     else {
-      const want=gap>1.2?Math.max(player.vs+1.0,2.8):player.vs;
-      inp.pedal=r.vs<want-0.4?1:0; inp.brake=r.vs>want+1.4?1:0;
+      // hold station at arm's length: gravity keeps pulling downhill, so a
+      // waiting hunter has to ride the brake or he rolls right past his mark
+      const want=gap>1.2?Math.min(2.8,Math.max(player.vs+0.8,gap*1.1)):player.vs;
+      inp.pedal=r.vs<want-0.4?1:0; inp.brake=r.vs>want+0.4?1:0;
     }
     // steer straight onto the player's handlebars
     target=player.lat;

@@ -6,7 +6,7 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 <p align="center">
   <a href="https://pranshuparmar.github.io/downhill-mayhem/">
-    <img src="media/demo.gif" alt="Ten seconds of DOWNHILL MAYHEM: hitting a ramp, throwing a Superman, boosting, and punching a rival off their bike" width="480">
+    <img src="media/demo.gif" alt="Twelve seconds of DOWNHILL MAYHEM: throwing a Superman off a ramp, boosting, punching DIESEL off his bike — then DIESEL hunting the player down and getting payback" width="480">
   </a>
   <br>
   <b><a href="https://pranshuparmar.github.io/downhill-mayhem/">▶ PLAY NOW — free, in your browser</a></b>
