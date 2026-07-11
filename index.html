@@ -1735,10 +1735,15 @@ function finishRider(r){
     popup(ordinal(place)+' PLACE!','');
     if(newPB) setTimeout(()=>popup('NEW PERSONAL BEST!','pb'),650);
     r.newPB=newPB;
-    // arcade rank stamp for the results screen
+    // arcade rank stamp: style earns points, but the mountain grades on
+    // placement — where you finish caps (and floors) the tier, and tricks,
+    // decks and PBs only move you inside that band. 5th cannot be "solid".
     const pts=(7-place)*14+Math.min(RACE_STATS.tricksLanded*6,30)
       +Math.min(RACE_STATS.decked*8,24)+(newPB?20:0);
-    r.rank=pts>=118?'S':pts>=92?'A':pts>=66?'B':pts>=40?'C':'D';
+    const TIERS=['S','A','B','C','D'];
+    const tier=pts>=118?0:pts>=92?1:pts>=66?2:pts>=40?3:4;
+    const cap=[0,0,1,1,2,3,4][place], floor=[0,1,2,3,3,4,4][place];
+    r.rank=TIERS[clamp(tier,cap,floor)];
   }
 }
 function updatePositions(){
