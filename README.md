@@ -57,7 +57,8 @@ whole hillside is rideable: rollers, dirt patches and slalom trees open up alter
 lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
 slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
 land a mid-air kick for an AIR STRIKE bonus. Races are decided in the final third;
-rubber-banding keeps the pack honest. Riders get fresh jersey colours every race.
+rivals bank boost of their own and burn it to close a gap — no lead is safe. Riders
+get fresh jersey colours every race.
 
 **Two mountains:** the **Classic** is the same course forever — your lifetime best lives
 there. The **Daily** (press `D` on the title screen) is a brand-new mountain generated
@@ -67,8 +68,8 @@ New course every day, same rivals, no server involved.
 **Chasing the mountain:** the game remembers your best time per mountain (stored locally
 in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW
 PERSONAL BEST fanfare. The HUD shows the live gap to the rider ahead, every overtake pops
-on screen, and the results table ends with your run's stats — top speed, biggest air,
-tricks, best combo, riders decked. Restarts use a shortened countdown after the first
+on screen, and the results screen ends with a one-line recap of how your race actually
+went plus your run's stats — top speed, biggest air, tricks, best combo, riders decked. Restarts use a shortened countdown after the first
 race, and `Esc` returns to the title screen.
 
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
@@ -83,7 +84,9 @@ final stretch. Tuck in behind a rider to slipstream, then swing. Butter a landin
 the downslope for a CLEAN bonus. The descent itself changes as you drop — frosty alpine
 up top, pine forest in the middle, warm canyon at the bottom. Finish within half a
 second of anyone and you get the PHOTO FINISH freeze; every race ends with an arcade
-rank stamp (D to S); and any rival you deck will remember it — expect revenge.
+rank stamp (D to S); and any rival you deck drops the race plan and *hunts you* —
+smouldering red, waiting if they must — until they've knocked you down and honour is
+settled. Then they go back to racing.
 
 ## Tech notes
 

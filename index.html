@@ -134,6 +134,7 @@
   #rankStamp.C { color:#fff; } #rankStamp.D { color:#9aa0a8; }
   #resTitle { font-style:italic; font-size:44px; color:#ffd23f; text-shadow:3px 3px 0 #000; text-align:center; letter-spacing:1px; }
   #resSub { text-align:center; font-size:15px; margin:2px 0 4px; color:#9fd; font-style:italic; }
+  #resRecap { text-align:center; font-size:13px; margin:0 0 4px; color:#cfe3ff; font-style:italic; max-width:440px; }
   #resStats { text-align:center; font-size:12px; margin:0 0 12px; color:#ffd23f; font-style:italic; letter-spacing:.5px; }
   #resTable { width:100%; border-collapse:collapse; font-size:17px; }
   #resTable td { padding:5px 10px; border-bottom:1px solid rgba(255,255,255,.18); font-style:italic; }
@@ -275,6 +276,7 @@
       <div id="rankStamp"></div>
       <div id="resTitle">RESULTS</div>
       <div id="resSub"></div>
+      <div id="resRecap"></div>
       <div id="resStats"></div>
       <table id="resTable"></table>
       <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
@@ -343,6 +345,7 @@ const BOOST_A=9.0, BOOST_DRAIN=27, BOOST_MIN=4;
 const METER_TRICKLE=3.5;                   // passive fill per second of clean riding
 const HIT_METER=6, AIR_STRIKE_METER=14, BOOST_STRIKE_METER=10; // combat pays; more airborne or boosting
 const PUNCH_S=2.2, PUNCH_LAT=1.6, PUNCH_DY=1.4, PLAYER_PUNCH_CD=0.75;
+const REVENGE_HUNT_T=20;                   // seconds a decked rival hunts you before racing on
 const TRICK_GRACE=0.22, BIGAIR_T=1.15, BIGAIR_METER=8;
 const TRICKS={
   nohander:{ dur:0.55, meter:14, name:'NO HANDER' },
@@ -1087,7 +1090,7 @@ function makeRider(def,idx){
     inp:{pedal:0,brake:0,steer:0,hop:false,boost:false,punch:false,trick:null},
     // physics
     s:0, lat:START_LATS[idx], y:0, vs:0, vlat:0, vy:0, grounded:true,
-    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0, wallT:0, draftT:0, grudge:false,
+    steerPos:0, lean:0, pitch:0, airTime:0, wasOnRamp:false, driftT:0, wallT:0, draftT:0, grudge:false, revengeT:0,
     // race
     finished:false, finishTime:null, racePos:idx+1, rubber:0,
     // trick/boost
@@ -1146,12 +1149,13 @@ function crashRider(r,cause){
   if(r.crashed||r.invuln>0||r.finished||state!=='racing'&&state!=='finished') return false;
   r.crashed=true; r.crashT=0; r.trick=null; r.pendingMeter=0; r.pendingNames.length=0; r.chain=0;
   r.boosting=false; r.windupT=-1;
+  r.meter*=0.4;   // crashing dumps most of your adrenaline
   r.vs*=0.35; r.vy=Math.min(r.vy,1.5);
   r.crashSpinX=4+Math.random()*6; r.crashSpinY=(Math.random()-0.5)*8;
   const nearPlayer=Math.abs(r.s-player.s)<45;
   if(r.isPlayer){
     shake+=cause==='punched'?1.1:0.7;
-    r.meter*=0.4;   // crashing dumps most of your adrenaline
+    RACE_STATS.crashes++;
     clearTouchBoost();
     popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='bail'?'BAILED MID-TRICK!'
       :cause==='hard'?'FLAT LANDING!':cause==='wall'?'INTO THE WALL!':'CRASHED!','bad');
@@ -1181,9 +1185,9 @@ function handleLanding(r,impact){
   if(r.isPlayer&&air>0.45&&impact<2.8){    // buttered onto the downslope
     gain+=5; popup('CLEAN! +5','small'); AudioSys.blip(1180,0.08,0.2,'triangle');
   }
-  if(gain>0&&r.isPlayer){
-    r.meter=clamp(r.meter+gain,0,100);
-    if(r.pendingNames.length||air>BIGAIR_T){   // the CLEAN popup already covered a bare +5
+  if(gain>0){
+    r.meter=clamp(r.meter+gain,0,100);   // rivals bank their tricks too
+    if(r.isPlayer&&(r.pendingNames.length||air>BIGAIR_T)){   // the CLEAN popup already covered a bare +5
       const names=r.pendingNames.length?r.pendingNames.join(' + '):'BIG AIR';
       popup(names+'  +'+Math.round(gain),'');
       AudioSys.chime();
@@ -1253,7 +1257,7 @@ function riderStep(r,dt){
     r.boosting=r.boostLatch&&inp.boost&&r.meter>0;
     if(r.boosting){ a+=BOOST_A; r.meter=Math.max(0,r.meter-BOOST_DRAIN*dt); }
     // clean riding slowly builds adrenaline
-    else if(r.isPlayer&&!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*dt);
+    else if(!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*(r.isPlayer?1:0.55)*dt);
     const cap=SOFTCAP_V*r.def.top*(1+r.rubber*0.5)+(r.boosting?4:0);
     if(r.vs>cap) a-=(r.vs-cap)*0.9;
     r.vs=Math.max(0,r.vs+a*dt);
@@ -1379,11 +1383,19 @@ function tryStrike(attacker,kind){
       popup(air?('AIR STRIKE! +'+gain):boosting?('BOOST STRIKE! +'+gain)
         :(kind==='kick'?'BOOT!':'POW!'),'pow');
     }
-    if(attacker.isPlayer&&!best.isPlayer&&!best.grudge){
+    if(attacker.isPlayer&&!best.isPlayer){
       best.grudge=true;                        // he'll remember that
-      setTimeout(()=>popup(best.def.name+' WANTS REVENGE!','down'),700);
+      best.revengeT=REVENGE_HUNT_T;            // the race can wait — payback first
+      if(!DEMO) setTimeout(()=>{ if(best.revengeT>0) popup(best.def.name+' WANTS REVENGE!','down'); },700);
     }
-    if(best.isPlayer) lastAIPunchOnPlayer=gameTime;
+    if(best.isPlayer){
+      lastAIPunchOnPlayer=gameTime;
+      if(attacker.revengeT>0){                 // debt settled — back to racing
+        attacker.revengeT=0;
+        RACE_STATS.paybacks++; RACE_STATS.avenger=attacker.def.name;
+        if(!DEMO) setTimeout(()=>popup(attacker.def.name+' GOT PAYBACK!','down'),650);
+      }
+    }
     return true;
   }
   if(nearPlayer) AudioSys.whoosh();   // a swing always makes a sound
@@ -1422,21 +1434,51 @@ function aiThink(r,dt){
   // rubber-band vs player: full help catching up, only a light leash on
   // leaders — nobody waits for a rider who isn't racing
   const gap=player.s-r.s;
-  r.rubber=gap>=0?clamp(gap/160,0,1)*0.15:clamp(gap/160,-1,0)*0.055;
+  r.rubber=gap>=0?clamp(gap/110,0,1)*0.34:clamp(gap/160,-1,0)*0.055;
 
-  // corner speed management
+  // revenge mode: a decked rival drops the race plan and hunts the player
+  // until payback lands — or the hunt goes stale, or the line is too close
+  if(r.revengeT>0){
+    r.revengeT-=dt;
+    if(player.finished||r.s>FINISH_S-100) r.revengeT=0;  // the line settles all scores
+  }
+  const hunting=r.revengeT>0;
+
+  // corner speed management (vendetta or not, corners still bite)
   const look=16+r.vs*0.9;
   const cAhead=sampleTrack(r.s+look,TMP_C).curv;
-  const maxV=Math.sqrt(3.5*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
+  const maxV=Math.sqrt((4.1+r.rubber*2.0)*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
   inp.brake=r.vs>maxV*1.03?1:0;
   inp.pedal=inp.brake?0:1;
 
-  // racing line: cut inside + personal line + wander
-  let target=clamp(-cAhead*260,-3.3,3.3)+r.lineBias+Math.sin(gameTime*r.wf+r.phase)*r.wamp;
-  for(const o of riders){
-    if(o===r) continue;
-    const ds=o.s-r.s;
-    if(ds>0.5&&ds<7&&Math.abs(o.lat-r.lat)<1.6) target+=(r.lat>=o.lat?1.9:-1.9);
+  let target;
+  if(hunting){
+    // run the player down — feathering the approach so they don't blow past —
+    // then creep into arm's reach; if overshot, stall and wait (grudges are patient)
+    if(gap>2.5){
+      const closeV=player.vs+1.5+gap*0.55;
+      if(r.vs>closeV){ inp.brake=1; inp.pedal=0; }
+      else if(gap>9&&!inp.brake&&r.grounded&&r.meter>BOOST_MIN+4) inp.boost=true;
+    }
+    else if(gap<-3){ inp.pedal=0; inp.brake=1; }
+    else {
+      const want=gap>1.2?Math.max(player.vs+1.0,2.8):player.vs;
+      inp.pedal=r.vs<want-0.4?1:0; inp.brake=r.vs>want+1.4?1:0;
+    }
+    // steer straight onto the player's handlebars
+    target=player.lat;
+  } else {
+    // racing line: cut inside + personal line + wander
+    target=clamp(-cAhead*260,-3.3,3.3)+r.lineBias+Math.sin(gameTime*r.wf+r.phase)*r.wamp;
+    for(const o of riders){
+      if(o===r) continue;
+      const ds=o.s-r.s;
+      if(ds>0.5&&ds<7&&Math.abs(o.lat-r.lat)<1.6) target+=(r.lat>=o.lat?1.9:-1.9);
+    }
+    // spend the meter like a rival: surge to close on the player, or to
+    // answer them in the endgame
+    if(!inp.brake&&r.grounded&&r.meter>BOOST_MIN+6&&Math.abs(cAhead)<0.011&&
+       (gap>12||(r.s>FINISH_S*0.72&&gap>-25))) inp.boost=true;
   }
   // dodge slalom trees ahead
   const b0=Math.floor(r.s/10);
@@ -1448,17 +1490,17 @@ function aiThink(r,dt){
     }
   }
   target=clamp(target,-7.2,7.2);
-  const desiredVlat=clamp((target-r.lat)*1.8,-6,6);
+  const desiredVlat=clamp((target-r.lat)*(hunting?2.4:1.8),-6,6);
   inp.steer=clamp((desiredVlat-r.vlat)*0.45,-1,1);
 
   if(r.grounded){
-    // hop off ramp lips sometimes
+    // hop off ramp lips sometimes (nobody showboats mid-vendetta)
     const rampH=rampHeightAt(r.s,r.lat);
-    if(rampH>0.05&&r.def.trick>0.4){ let onLip=false;
+    if(rampH>0.05&&r.def.trick>0.4&&!hunting){ let onLip=false;
       for(const rp of ramps){ if(r.s>=rp.s0&&r.s<=rp.s0+rp.len&&(r.s-rp.s0)/rp.len>0.75){ onLip=true; break; } }
       if(onLip) inp.hop=Math.random()<dt*1.5;
     }
-  } else if(!r.trick&&r.airTime>0.25){
+  } else if(!r.trick&&r.airTime>0.25&&!hunting){
     // visual tricks (skill-scaled, occasionally botched)
     if(Math.random()<r.def.trick*2.6*dt){
       const rem=predictAirRemaining(r)-0.15;
@@ -1479,20 +1521,31 @@ function aiThink(r,dt){
         tryStrike(r,r.strikeKind);
       } else { if(r.strikeKind==='kick') r.kickAnimT=0; else r.punchAnimT=0;
         if(Math.abs(r.s-player.s)<40) AudioSys.whoosh(); }
-      r.punchCd=r.grudge?5+Math.random()*3:9+Math.random()*6;
+      r.punchCd=r.revengeT>0?1.1+Math.random()*0.9:r.grudge?5+Math.random()*3:9+Math.random()*6;
     }
   } else if(r.punchCd<=0&&r.grounded){
-    for(const o of riders){
-      if(o===r||o.crashed||o.invuln>0||o.finished) continue;
-      const ds=Math.abs(o.s-r.s), dl=Math.abs(o.lat-r.lat);
-      if(ds<2.0&&dl<1.3&&Math.abs(o.y-r.y)<PUNCH_DY){
-        const isP=o.isPlayer;
-        if(isP&&gameTime-lastAIPunchOnPlayer<4) continue;
-        if(Math.random()<r.def.aggr*(isP?(r.grudge?2.5:1):0.3)*dt*2.2){
-          r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
-          r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
-          if(isP) AudioSys.tell();   // audible warning when you're the target
-          break;
+    if(hunting){
+      // revenge doesn't hesitate — swing the moment they're in reach
+      const dsP=Math.abs(player.s-r.s), dlP=Math.abs(player.lat-r.lat);
+      if(dsP<2.0&&dlP<1.3&&Math.abs(player.y-r.y)<PUNCH_DY
+         &&!player.crashed&&player.invuln<=0&&!player.finished){
+        r.windupT=0; r.windupTarget=player; r.strikeKind=Math.random()<0.5?'kick':'punch';
+        r.strikeSide=Math.sign(player.lat-r.lat)||1;
+        AudioSys.tell();
+      }
+    } else {
+      for(const o of riders){
+        if(o===r||o.crashed||o.invuln>0||o.finished) continue;
+        const ds=Math.abs(o.s-r.s), dl=Math.abs(o.lat-r.lat);
+        if(ds<2.0&&dl<1.3&&Math.abs(o.y-r.y)<PUNCH_DY){
+          const isP=o.isPlayer;
+          if(isP&&gameTime-lastAIPunchOnPlayer<4) continue;
+          if(Math.random()<r.def.aggr*(isP?(r.grudge?2.5:1):0.3)*dt*2.2){
+            r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
+            r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
+            if(isP) AudioSys.tell();   // audible warning when you're the target
+            break;
+          }
         }
       }
     }
@@ -1531,7 +1584,8 @@ let lastCountDigit=-1, resultsShownAt=-1;
 let racesRun=0, countDur=3.8, prevPlayerPos=0, posPopupCd=0, hitStopT=0;
 let DEMO=false, demoSubject=null, demoCutT=0, demoShot=0;
 // per-race player stats (results screen) + all-time bests (one local key)
-const RACE_STATS={ topSpeed:0, biggestAir:0, tricksLanded:0, decked:0, bestCombo:0 };
+const RACE_STATS={ topSpeed:0, biggestAir:0, tricksLanded:0, decked:0, bestCombo:0,
+  crashes:0, paybacks:0, avenger:'' };
 const SAVE_KEY='downhill-mayhem-best';
 let BEST={};
 // ghost of your PB run: (s,lat,y) sampled at 10 Hz, stored with the best time
@@ -1593,7 +1647,7 @@ function resetRiders(){
   for(const r of riders){
     r.s=0; r.lat=START_LATS[r.idx]; r.y=groundHeight(r.s,r.lat);
     r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0; r.wallT=0;
-    r.draftT=0; r.grudge=false;
+    r.draftT=0; r.grudge=false; r.revengeT=0;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
     r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
     r.meter=0; r.boosting=false; r.boostLatch=false;
@@ -1608,6 +1662,7 @@ function resetRiders(){
   prevPlayerPos=0; posPopupCd=0; hitStopT=0;
   RACE_STATS.topSpeed=0; RACE_STATS.biggestAir=0; RACE_STATS.tricksLanded=0;
   RACE_STATS.decked=0; RACE_STATS.bestCombo=0;
+  RACE_STATS.crashes=0; RACE_STATS.paybacks=0; RACE_STATS.avenger='';
   document.getElementById('popups').innerHTML='';
   document.getElementById('results').classList.add('hidden');
   document.getElementById('count').classList.add('hidden');
@@ -1630,7 +1685,7 @@ function startDemoRace(){
   document.getElementById('hud').classList.add('hidden');
 }
 function finishRider(r){
-  r.finished=true; r.finishTime=raceTime;
+  r.finished=true; r.finishTime=raceTime; r.revengeT=0;
   if(r.isPlayer){
     if(DEMO) return;   // the attract bot's runs count for nothing
     state='finished';
@@ -1653,6 +1708,7 @@ function finishRider(r){
     // photo finish: anyone at the line with you freezes the frame
     const close=riders.some(o=>o!==r&&(o.finished?Math.abs(o.finishTime-r.finishTime)<0.5
       :Math.abs(o.s-FINISH_S)<12));
+    r.photo=close;
     if(close&&!FAST){ hitStopT=0.55; setTimeout(()=>popup('PHOTO FINISH!','pb'),60); }
     popup(ordinal(place)+' PLACE!','');
     if(newPB) setTimeout(()=>popup('NEW PERSONAL BEST!','pb'),650);
@@ -1765,6 +1821,7 @@ function showResults(){
   if(player.finished&&player.chalDiff!=null)
     sub+=player.chalDiff<0?' · CHALLENGE BEATEN':' · challenge +'+player.chalDiff.toFixed(2)+'s';
   document.getElementById('resSub').textContent=sub;
+  document.getElementById('resRecap').textContent=raceRecap(order,place);
   document.getElementById('chalBtn').style.display=player.finished?'block':'none';
   const rs=document.getElementById('rankStamp');
   if(player.finished&&player.rank){ rs.textContent=player.rank; rs.className=player.rank; rs.style.display='block'; }
@@ -1772,6 +1829,26 @@ function showResults(){
   document.getElementById('resStats').textContent=
     'TOP '+Math.round(RACE_STATS.topSpeed)+' km/h · AIR '+RACE_STATS.biggestAir.toFixed(1)+'s · TRICKS '
     +RACE_STATS.tricksLanded+' · COMBO ×'+RACE_STATS.bestCombo+' · DECKED '+RACE_STATS.decked;
+}
+// one line of colour commentary under the standings
+function raceRecap(order,place){
+  const S=RACE_STATS, me=order.indexOf(player);
+  const rival=me>0?order[me-1]:order[1];   // the rider you chased — or your closest victim
+  const margin=(rival&&rival.finished&&player.finished)?Math.abs(rival.finishTime-player.finishTime):null;
+  const name=rival?rival.def.name:'';
+  const crashes=S.crashes===1?'1 crash':S.crashes+' crashes';
+  if(player.photo&&place===1&&margin!=null) return 'Photo finish — you stole the win from '+name+' by '+margin.toFixed(2)+'s.';
+  if(player.photo&&place>1&&margin!=null) return 'Photo finish — '+name+' pipped you at the line by '+margin.toFixed(2)+'s.';
+  if(place===1&&S.crashes===0&&S.decked>=2) return 'Untouchable — never went down, and put '+S.decked+' riders in the dirt on the way.';
+  if(place===1&&S.crashes===0) return 'A flawless descent — led the mountain home without a single crash.';
+  if(place===1) return 'You shook off '+crashes+' and still beat '+name+' to the bottom.';
+  if(S.paybacks>0&&place>=4) return S.avenger+' got that payback and it cost you — '+ordinal(place)+' after '+crashes+'.';
+  if(S.decked>=3) return 'You brawled your way down — '+S.decked+' riders decked, '+ordinal(place)+' at the line.';
+  if(place<=3&&margin!=null) return 'A podium scrap — '+margin.toFixed(2)+'s behind '+name+' at the line.';
+  if(place<=3) return 'A podium scrap — '+ordinal(place)+', right in the thick of it.';
+  if(S.crashes>=4) return 'The mountain won this round — down '+S.crashes+' times before the line.';
+  return 'Mid-pack mayhem — '+ordinal(place)+' at '+Math.round(S.topSpeed)+' km/h, '
+    +S.tricksLanded+(S.tricksLanded===1?' trick':' tricks')+' banked.';
 }
 
 // ------------------------------------------------------------ HUD ----------
@@ -1965,8 +2042,8 @@ function riderVisual(r,dt){
       }
     }
     v.person.position.z=v.personHome.z+pz; v.person.position.y=v.personHome.y+py;
-    // boost glow
-    v.mat.emissive.setHex(r.boosting?0x662200:0x000000);
+    // boost glow — and a red smoulder on anyone hunting for payback
+    v.mat.emissive.setHex(r.boosting?0x662200:(r.revengeT>0?0x3c0000:0x000000));
   }
   // blob shadow
   const gnd=groundHeight(r.s,r.lat);
