@@ -1259,7 +1259,7 @@ function riderStep(r,dt){
     r.boosting=r.boostLatch&&inp.boost&&r.meter>0;
     if(r.boosting){ a+=BOOST_A; r.meter=Math.max(0,r.meter-BOOST_DRAIN*dt); }
     // clean riding slowly builds adrenaline
-    else if(!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*(r.isPlayer?1:0.55+r.rubber*0.9)*dt);
+    else if(!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*(r.isPlayer?1:0.7+r.rubber*0.9)*dt);
     const cap=SOFTCAP_V*r.def.top*(1+r.rubber*0.5)+(r.boosting?4:0);
     if(r.vs>cap) a-=(r.vs-cap)*0.9;
     r.vs=Math.max(0,r.vs+a*dt);
@@ -1462,7 +1462,7 @@ function aiThink(r,dt){
     if(gap>2.5){
       const closeV=player.vs+1.5+gap*0.55;
       if(r.vs>closeV){ inp.brake=1; inp.pedal=0; }
-      else if(gap>6&&!inp.brake&&r.grounded&&r.meter>BOOST_MIN+2) inp.boost=true;
+      else if(gap>6&&!inp.brake&&r.grounded&&r.vs<maxV*0.97&&r.meter>BOOST_MIN+2) inp.boost=true;
     }
     else if(gap<-3){ inp.pedal=0; inp.brake=1; }
     else {
@@ -1481,10 +1481,13 @@ function aiThink(r,dt){
       const ds=o.s-r.s;
       if(ds>0.5&&ds<7&&Math.abs(o.lat-r.lat)<1.6) target+=(r.lat>=o.lat?1.9:-1.9);
     }
-    // spend the meter like a rival: surge to close on the player, or to
-    // answer them in the endgame
-    if(!inp.brake&&r.grounded&&r.meter>BOOST_MIN+6&&Math.abs(cAhead)<0.011&&
-       (gap>12||(r.s>FINISH_S*0.65&&gap>-35))) inp.boost=true;
+    // spend the meter like a racer: hold a war chest, then burn it in one
+    // visible surge (hysteresis: fire above the chest, hold until nearly dry)
+    // — chasing, answering in the endgame, or emptying the tank at the line.
+    // "won't run hot into the next corner" replaces any straight-only rule.
+    const fireAt=r.s>FINISH_S-400?BOOST_MIN+4:25;
+    if(!inp.brake&&r.grounded&&r.vs<maxV*0.97&&r.meter>(r.boosting?BOOST_MIN+1:fireAt)&&
+       (gap>8||(r.s>FINISH_S*0.65&&gap>-35)||r.s>FINISH_S-400)) inp.boost=true;
   }
   // dodge slalom trees ahead
   const b0=Math.floor(r.s/10);
@@ -1656,7 +1659,8 @@ function resetRiders(){
     r.draftT=0; r.grudge=false; r.revengeT=0;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
     r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
-    r.meter=0; r.boosting=false; r.boostLatch=false;
+    r.meter=r.isPlayer?0:8+Math.random()*17;   // rivals roll off the gate with a war chest
+    r.boosting=false; r.boostLatch=false;
     r.crashed=false; r.crashT=0; r.invuln=0; r.punchAnimT=-1; r.kickAnimT=-1; r.windupT=-1;
     r.punchCd=r.isPlayer?0:3+r.idx*1.7; r.reactT=0.08+Math.random()*0.3;
     r.lineBias=(Math.random()*2-1)*3.2;
