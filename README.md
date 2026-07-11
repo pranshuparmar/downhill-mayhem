@@ -57,12 +57,22 @@ slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`
 land a mid-air kick for an AIR STRIKE bonus. Races are decided in the final third;
 rubber-banding keeps the pack honest. Riders get fresh jersey colours every race.
 
-**Chasing the mountain:** it's the same course every run, and the game remembers your
-best time (stored locally in your browser — still no accounts, nothing leaves your
-machine). Beat it for the NEW PERSONAL BEST fanfare. The HUD shows the live gap to the
-rider ahead, every overtake pops on screen, and the results table ends with your run's
-stats — top speed, biggest air, tricks, best combo, riders decked. Restarts after the
-first race use a shortened countdown, so the next attempt is always seconds away.
+**Two mountains:** the **Classic** is the same course forever — your lifetime best lives
+there. The **Daily** (press `D` on the title screen) is a brand-new mountain generated
+from today's UTC date, identical for every player in the world, with its own best time.
+New course every day, same rivals, no server involved.
+
+**Chasing the mountain:** the game remembers your best time per mountain (stored locally
+in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW
+PERSONAL BEST fanfare. The HUD shows the live gap to the rider ahead, every overtake pops
+on screen, and the results table ends with your run's stats — top speed, biggest air,
+tricks, best combo, riders decked. Restarts use a shortened countdown after the first
+race, and `Esc` returns to the title screen.
+
+**Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
+screen — it copies a link that carries the exact mountain and your time. Anyone opening
+it sees your time as a target on their HUD and gets a BEATEN/missed verdict at the line.
+The whole challenge lives in the link; there is no server and no account.
 
 ## Tech notes
 

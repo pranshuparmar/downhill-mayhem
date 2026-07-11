@@ -99,6 +99,18 @@
     text-shadow:3px 3px 0 #a33, 7px 7px 0 rgba(0,0,0,.9); }
   #tag { margin-top:14px; font-size:15px; font-style:italic; color:#cfe; text-shadow:2px 2px 0 #000; }
   #bestLine { margin-top:8px; font-size:17px; font-style:italic; color:#ffd23f; text-shadow:2px 2px 0 #000; letter-spacing:1px; }
+  #chalLine { margin-top:4px; font-size:16px; font-style:italic; color:#59ff7a; text-shadow:2px 2px 0 #000; letter-spacing:1px; }
+  #modeSwap { margin-top:10px; font-size:15px; font-style:italic; color:#9fd; text-shadow:2px 2px 0 #000;
+    cursor:pointer; pointer-events:auto; }
+  #modeSwap:hover { color:#fff; }
+  #ghLink { color:#ffd23f; text-decoration:none; pointer-events:auto; }
+  #ghLink:hover { text-decoration:underline; }
+  #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
+  #target { position:absolute; top:70px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:15px; color:#59ff7a; }
+  #chalBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
+    font-size:14px; color:#fff; background:rgba(255,140,0,.35); border:2px solid #fff; box-shadow:3px 3px 0 rgba(0,0,0,.7);
+    cursor:pointer; letter-spacing:.5px; }
+  #chalBtn:hover { background:rgba(255,140,0,.6); }
   #controls { margin-top:26px; display:grid; grid-template-columns:auto auto; gap:4px 18px; font-size:14px;
     font-style:normal; text-align:left; background:rgba(0,0,0,.5); padding:14px 22px; border:2px solid rgba(255,255,255,.25); }
   #controls b { color:#ffd23f; font-style:italic; }
@@ -150,8 +162,9 @@
   #tT3 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   #tT4 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
-  #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
-  #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
+  #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(116px + env(safe-area-inset-right)); }
+  #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
+  #tHome { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
 
   #rotate { position:absolute; inset:0; z-index:7; display:none; flex-direction:column; gap:8px;
     align-items:center; justify-content:center; text-align:center; background:rgba(8,12,18,.88);
@@ -192,6 +205,8 @@
     <div id="pos"><span class="big">6th</span><span class="small"> /6</span></div>
     <div id="gap"></div>
     <div id="timer">0:00.00</div>
+    <div id="modeTag"></div>
+    <div id="target"></div>
     <div id="speed"><span class="num">0</span><br><span class="unit">km/h</span></div>
     <div id="boostWrap">
       <div id="boostLabel">BOOST</div>
@@ -209,6 +224,7 @@
     <div id="logo"><div class="l1">DOWNHILL</div><div class="l2">MAYHEM</div></div>
     <div id="tag">Race 5 rivals down two kilometres of mountain. Tricks charge your boost. Fists settle the rest.</div>
     <div id="bestLine"></div>
+    <div id="chalLine"></div>
     <div id="controls">
       <span><b>W / ↑</b></span><span>Pedal</span>
       <span><b>S / ↓</b></span><span>Brake</span>
@@ -222,7 +238,9 @@
       <span><b>R · M · T</b></span><span>Restart · Mute · CRT filter</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
-    <div id="foot">Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · Three.js via CDN</div>
+    <div id="modeSwap"></div>
+    <div id="foot"><a id="ghLink" href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a><br>
+      Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · Three.js via CDN</div>
   </div>
 
   <div id="touchUI" class="hidden">
@@ -239,6 +257,7 @@
     <div class="tbtn trick" id="tT4">BACK<br>FLIP</div>
     <div class="tbtn tiny" id="tMute">🔊</div>
     <div class="tbtn tiny" id="tRestart">⟳</div>
+    <div class="tbtn tiny" id="tHome">⌂</div>
   </div>
   <div id="rotate">🔄 ROTATE YOUR PHONE<br><span style="font-size:16px;color:#fff">mayhem needs landscape</span></div>
 
@@ -248,6 +267,7 @@
       <div id="resSub"></div>
       <div id="resStats"></div>
       <table id="resTable"></table>
+      <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
       <div id="resAgain">PRESS R TO RACE AGAIN</div>
     </div>
   </div>
@@ -284,7 +304,11 @@ function fmtTime(t){ if(t==null) return '—'; const m=Math.floor(t/60), s=t-m*6
   return m+':'+(s<10?'0':'')+s.toFixed(2); }
 
 // ------------------------------------------------------------ config -------
-const SEED=20030616;                       // fixed seed: identical course every run
+const SEED=20030616;                       // the Classic mountain: identical every run
+let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
+function dailySeed(){ const d=new Date(); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }
+function seedLabel(s){ const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return m[Math.floor(s/100)%100-1]+' '+(s%100); }
 const DS=2, S_MIN=-80, S_MAX=2520, FINISH_S=2300, HALF_W=8;
 const RIDE_W=26;                           // rideable hillside half-width
 const LAT_CLAMP=27.5;                      // valley wall
@@ -339,7 +363,8 @@ function blur(arr,win,passes){
       arr[i]=sum/c; } }
 }
 function buildTrack(){
-  const rng=mulberry32(SEED);
+  const rng=mulberry32(CUR_SEED);
+  NOFF=(CUR_SEED%977)*13.7;   // shifts the terrain noise field per mountain
   // curvature: alternating straights & sweeping turns, biased back toward heading 0
   let lastTurn=rng()<0.5?1:-1, wasTurn=false, hEst=0;
   const curv=buildProfile(rng, (s)=>{
@@ -427,7 +452,7 @@ function groundHeight(s,lat){
   let y=c.y + c.curv*9*clamp(lat,-10,10);            // bank into turns
   // rolling hillside relief: near-zero on the groomed line, real whoops out wide
   const rollAmp = a<HALF_W ? 0.22*smoothstep(a/HALF_W) : Math.min(1.7, 0.22+(a-HALF_W)*0.11);
-  y += vnoise2(s*0.05, lat*0.062)*rollAmp + vnoise2(s*0.23, lat*0.21)*rollAmp*0.35;
+  y += vnoise2(s*0.05+NOFF, lat*0.062+NOFF)*rollAmp + vnoise2(s*0.23+NOFF, lat*0.21+NOFF)*rollAmp*0.35;
   if(a>HALF_W){
     const d=a-HALF_W;
     y += 0.045*Math.pow(d,1.45);                     // hillside climbs away from the line
@@ -541,6 +566,9 @@ window.addEventListener('keydown',e=>{
   }
   else if(e.code==='Enter') pressQueue.enter=true;
   else if(e.code==='KeyR'){ if(state!=='title') resetRace(); }
+  else if(e.code==='Escape'){ if(state!=='title'&&state!=='boot') goTitle(); }
+  else if(e.code==='KeyD'&&state==='title'){ setMode('daily'); resetRace(); }
+  else if(e.code==='KeyC'&&state==='title'){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT'){ document.getElementById('crt').classList.toggle('off');
     document.getElementById('vig').classList.toggle('off'); }
@@ -554,7 +582,6 @@ function initTouch(){
   if(!IS_TOUCH) return;
   document.body.classList.add('touch');
   touchUIEl=document.getElementById('touchUI');
-  document.getElementById('pressEnter').textContent='TAP TO START';
   document.getElementById('tag').textContent='Steer with ◀ ▶ · JUMP off ramps · tricks in the air · BOOST burns the meter · settle it with 👊 and 🦶';
   const bind=(id,on,off)=>{
     const el=document.getElementById(id);
@@ -576,6 +603,7 @@ function initTouch(){
   bind('tT3',()=>{ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); });
   bind('tT4',()=>{ pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); });
   bind('tRestart',()=>{ if(state!=='title') resetRace(); });
+  bind('tHome',()=>{ if(state!=='title') goTitle(); });
   bind('tMute',()=>AudioSys.toggleMute());
   // boost is a latch on touch — thumbs are busy steering
   tBoostEl=document.getElementById('tBoost');
@@ -667,14 +695,27 @@ const colTreeBuckets=new Map(); // s-bucket -> [{s,lat,r}]
 function addColTree(s,lat,r){ const b=Math.floor(s/10);
   if(!colTreeBuckets.has(b)) colTreeBuckets.set(b,[]); colTreeBuckets.get(b).push({s,lat,r}); }
 
+let WG=null; // everything seed-dependent lives in one group so mountains can be swapped
 function buildWorld(){
+  WG=new THREE.Group(); scene.add(WG);
+  colTreeBuckets.clear();
   buildTerrain();
   buildScenery();
   buildGates();
 }
+function rebuildWorld(seed){
+  if(WG){
+    WG.traverse(o=>{ if(o.geometry) o.geometry.dispose();
+      const m=o.material; if(m) (Array.isArray(m)?m:[m]).forEach(mm=>{ if(mm.map) mm.map.dispose(); mm.dispose(); }); });
+    scene.remove(WG);
+  }
+  CUR_SEED=seed;
+  buildTrack();
+  buildWorld();
+}
 
 function terrainColor(s,lat,rampH,out){
-  const a=Math.abs(lat), n=vnoise2(s*0.9,lat*0.9);
+  const a=Math.abs(lat), n=vnoise2(s*0.9+NOFF,lat*0.9+NOFF);
   if(rampH>0.04){ // wooden kicker: planks + pale stripe on the lip edge
     for(const r of ramps){
       if(s>=r.s0&&s<=r.s0+r.len+0.1&&(r.s0+r.len)-s<0.95){ out.setRGB(0.88,0.85,0.76); return out; }
@@ -740,12 +781,12 @@ function buildTerrain(){
     g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
     g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
     g.computeVertexNormals();
-    scene.add(new THREE.Mesh(g,mat));
+    WG.add(new THREE.Mesh(g,mat));
   }
 }
 
 function buildScenery(){
-  const rng=mulberry32(SEED+31);
+  const rng=mulberry32(CUR_SEED+31);
   // instances are bucketed by course distance so frustum culling can drop
   // whole 280 m stretches of forest (big win with heavy fog)
   const BUCKET=200;
@@ -795,7 +836,7 @@ function buildScenery(){
       for(const m of list) rad=Math.max(rad,pv.setFromMatrixPosition(m).distanceTo(ctr));
       im.geometry.boundingSphere=new THREE.Sphere(ctr.clone(),rad+12);
       for(let i=0;i<list.length;i++) im.setMatrixAt(i,list[i]);
-      im.instanceMatrix.needsUpdate=true; scene.add(im);
+      im.instanceMatrix.needsUpdate=true; WG.add(im);
     }
   }
   inst(new THREE.CylinderGeometry(0.16,0.24,2.2,5), 0x5a4028, trunks);
@@ -833,7 +874,7 @@ function buildGates(){
     for(const flip of [0,Math.PI]){
       const b=new THREE.Mesh(geo,mat); b.position.copy(v); b.rotation.y=h+Math.PI+flip; grp.add(b);
     }
-    scene.add(grp);
+    WG.add(grp);
   };
   mk(0, makeBannerTex('START','DOWNHILL MAYHEM','#224488',false));
   mk(FINISH_S, makeBannerTex('FINISH','','#ffffff',true));
@@ -1362,9 +1403,55 @@ let racesRun=0, countDur=3.8, prevPlayerPos=0, posPopupCd=0, hitStopT=0;
 const RACE_STATS={ topSpeed:0, biggestAir:0, tricksLanded:0, decked:0, bestCombo:0 };
 const SAVE_KEY='downhill-mayhem-best';
 let BEST={};
-try{ BEST=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')||{}; }catch(e){ BEST={}; }
-function saveBest(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(BEST)); }catch(e){} }
+function bestKey(){ return MODE==='classic'?SAVE_KEY:SAVE_KEY+'-d'+CUR_SEED; }
+function loadBestFor(){ try{ BEST=JSON.parse(localStorage.getItem(bestKey())||'{}')||{}; }catch(e){ BEST={}; } }
+function saveBest(){ try{ localStorage.setItem(bestKey(),JSON.stringify(BEST)); }catch(e){} }
 
+// challenge links: ?c=c-<time> (classic) or ?c=d-<seed>-<time> (a specific daily)
+let CHAL=null, lastChallengeLink='';
+try{
+  const cRaw=new URLSearchParams(location.search).get('c');
+  if(cRaw){
+    let m;
+    if((m=cRaw.match(/^c-(\d+(?:\.\d+)?)$/))) CHAL={mode:'classic',seed:SEED,time:+m[1]};
+    else if((m=cRaw.match(/^d-(\d{8})-(\d+(?:\.\d+)?)$/))) CHAL={mode:'daily',seed:+m[1],time:+m[2]};
+    if(CHAL&&!(CHAL.time>10&&CHAL.time<3600)) CHAL=null;
+  }
+}catch(e){ CHAL=null; }
+function challengeActive(){ return CHAL&&CHAL.mode===MODE&&CHAL.seed===CUR_SEED; }
+function challengeLink(t){
+  const base=location.href.split('?')[0].split('#')[0];
+  return base+'?c='+(MODE==='classic'?('c-'+t.toFixed(2)):('d-'+CUR_SEED+'-'+t.toFixed(2)));
+}
+function setMode(mode,seed){
+  MODE=mode;
+  const s=mode==='classic'?SEED:(seed||dailySeed());
+  if(s!==CUR_SEED){ rebuildWorld(s);
+    for(const r of riders) r.y=groundHeight(r.s,r.lat); }
+  loadBestFor();
+  refreshTitle();
+}
+
+function goTitle(){
+  state='title';
+  document.getElementById('title').classList.remove('hidden');
+  document.getElementById('hud').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('count').classList.add('hidden');
+  refreshTitle();
+}
+function refreshTitle(){
+  const be=document.getElementById('bestLine');
+  be.textContent=BEST.time?('YOUR BEST · '+fmtTime(BEST.time)):(MODE==='daily'?'NO TIME SET TODAY — BE FIRST':'');
+  const cl=document.getElementById('chalLine');
+  cl.textContent=challengeActive()?('⚑ CHALLENGE — BEAT '+fmtTime(CHAL.time)):'';
+  document.getElementById('pressEnter').textContent=
+    challengeActive()?(IS_TOUCH?'TAP — ACCEPT CHALLENGE':'ENTER — ACCEPT CHALLENGE')
+    :(IS_TOUCH?'TAP TO START':'PRESS ENTER');
+  document.getElementById('modeSwap').textContent=
+    MODE==='classic'?((IS_TOUCH?'TAP HERE':'PRESS D')+' — TODAY\'S DAILY MOUNTAIN ('+seedLabel(dailySeed())+')')
+                    :((IS_TOUCH?'TAP HERE':'PRESS C')+' — BACK TO THE CLASSIC MOUNTAIN');
+}
 function resetRace(){
   // fresh jersey colours every race
   const pool=JERSEY_POOL.slice();
@@ -1401,6 +1488,11 @@ function finishRider(r){
     state='finished';
     const newPB=!BEST.time||r.finishTime<BEST.time;
     if(newPB) BEST.time=r.finishTime;
+    if(challengeActive()){
+      r.chalDiff=r.finishTime-CHAL.time;
+      if(r.chalDiff<0){ setTimeout(()=>popup('CHALLENGE BEATEN!','pb'),1200); }
+      else setTimeout(()=>popup('CHALLENGE MISSED +'+r.chalDiff.toFixed(2)+'s','small'),1200);
+    } else r.chalDiff=null;
     BEST.topSpeed=Math.max(BEST.topSpeed||0,RACE_STATS.topSpeed);
     BEST.biggestAir=Math.max(BEST.biggestAir||0,RACE_STATS.biggestAir);
     BEST.bestCombo=Math.max(BEST.bestCombo||0,RACE_STATS.bestCombo);
@@ -1496,7 +1588,10 @@ function showResults(){
   const place=player.racePos;
   let sub='You finished '+ordinal(place)+' — '+fmtTime(player.finishTime);
   if(player.finished) sub+=player.newPB?' · NEW BEST!':(BEST.time?' · best '+fmtTime(BEST.time):'');
+  if(player.finished&&player.chalDiff!=null)
+    sub+=player.chalDiff<0?' · CHALLENGE BEATEN':' · challenge +'+player.chalDiff.toFixed(2)+'s';
   document.getElementById('resSub').textContent=sub;
+  document.getElementById('chalBtn').style.display=player.finished?'block':'none';
   document.getElementById('resStats').textContent=
     'TOP '+Math.round(RACE_STATS.topSpeed)+' km/h · AIR '+RACE_STATS.biggestAir.toFixed(1)+'s · TRICKS '
     +RACE_STATS.tricksLanded+' · COMBO ×'+RACE_STATS.bestCombo+' · DECKED '+RACE_STATS.decked;
@@ -1506,6 +1601,23 @@ function showResults(){
 const hudEls={};
 function initHud(){
   ['pos','timer','speed','boostFill','boostBar','popups','prog','hint'].forEach(id=>hudEls[id]=document.getElementById(id));
+  // challenge-a-friend: copy a link that carries this mountain + your time
+  const btn=document.getElementById('chalBtn');
+  const stopper=e=>e.stopPropagation();
+  btn.addEventListener('pointerdown',stopper);
+  btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    if(!player.finished) return;
+    lastChallengeLink=challengeLink(player.finishTime);
+    const done=()=>{ btn.textContent='COPIED! PASTE IT ANYWHERE'; setTimeout(()=>btn.textContent='📋 CHALLENGE A FRIEND — SEND THIS RUN',2200); };
+    try{ navigator.clipboard.writeText(lastChallengeLink).then(done).catch(()=>{ prompt('Copy your challenge link:',lastChallengeLink); }); }
+    catch(_){ prompt('Copy your challenge link:',lastChallengeLink); }
+  });
+  const swap=document.getElementById('modeSwap');
+  swap.addEventListener('pointerdown',stopper);
+  swap.addEventListener('click',e=>{ e.stopPropagation();
+    setMode(MODE==='classic'?'daily':'classic'); resetRace(); });
+  document.getElementById('ghLink').addEventListener('pointerdown',stopper);
   hudEls.posBig=hudEls.pos.querySelector('.big');
   hudEls.speedNum=hudEls.speed.querySelector('.num');
   // progress dots
@@ -1525,6 +1637,12 @@ function updateHud(){
   if(pt!==lastPosTxt){ lastPosTxt=pt; hudEls.posBig.textContent=pt; }
   const tt=fmtTime(player.finished?player.finishTime:(state==='racing'||state==='finished')?raceTime:0);
   if(tt!==lastTimeTxt){ lastTimeTxt=tt; hudEls.timer.textContent=tt; }
+  const mt=MODE==='daily'?('DAILY · '+seedLabel(CUR_SEED)):'';
+  const mtEl=document.getElementById('modeTag');
+  if(mtEl.textContent!==mt) mtEl.textContent=mt;
+  const tg=(challengeActive()&&!player.finished&&(state==='racing'||state==='countdown'))?('⚑ TARGET '+fmtTime(CHAL.time)):'';
+  const tgEl=document.getElementById('target');
+  if(tgEl.textContent!==tg) tgEl.textContent=tg;
   // gap to the rider ahead (or your lead when 1st) — the "almost got him" readout
   const gapEl=document.getElementById('gap');
   if(state==='racing'&&!player.finished&&raceTime>2){
@@ -1755,15 +1873,17 @@ function boot(){
       '<span style="opacity:.7">(The game itself is a single offline-friendly file — only the 3D library comes from cdnjs.)</span></div>';
     return;
   }
+  if(CHAL){ MODE=CHAL.mode; CUR_SEED=CHAL.seed; }   // a challenge link picks the mountain
   buildTrack();
   initThree();
   buildWorld();
   makeRiders();
   initHud();
   initTouch();
+  loadBestFor();
   // place riders at the gate for the title backdrop
   for(const r of riders){ r.y=groundHeight(r.s,r.lat); riderVisual(r,0.016); }
-  if(BEST.time) document.getElementById('bestLine').textContent='YOUR BEST · '+fmtTime(BEST.time);
+  refreshTitle();
   state='title';
   requestAnimationFrame(frame);
   console.log('%cDOWNHILL MAYHEM','font:italic 900 22px Arial;color:#ffd23f;',
@@ -1778,6 +1898,8 @@ window.GAME={
   get ramps(){ return ramps; }, get scene(){ return scene; }, stats:STATS,
   get best(){ return BEST; }, raceStats:RACE_STATS,
   get hitStopT(){ return hitStopT; }, get countdownDur(){ return countDur; },
+  get mode(){ return MODE; }, get seed(){ return CUR_SEED; },
+  get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
@@ -1793,6 +1915,7 @@ window.GAME={
       r.vs=player.vs; r.vlat=0; r.vy=0; r.windupT=-1; r.reactT=0; return r; },
     nearestTreeAfter(s){ for(let b=Math.floor(s/10);b<Math.floor((S_MAX)/10);b++){
       const l=colTreeBuckets.get(b); if(l) for(const t of l) if(t.s>s) return {s:t.s,lat:t.lat}; } return null; },
+    startMode(m,s){ setMode(m,s); resetRace(); },
     fastForward(seconds){ FAST=true; const dt=1/60, n=Math.round(seconds/dt);
       for(let i=0;i<n;i++){ if(this.autopilotOn&&!player.finished){ aiThink(player,dt); player.inp.boost=false; }
         updateRace(dt); if(state==='finished'&&riders.every(r=>r.finished)) break; }
