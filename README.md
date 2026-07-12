@@ -77,7 +77,9 @@ on screen, and the results screen ends with a one-line recap of how your race ac
 went plus your run's stats — top speed, biggest air, tricks, best combo, riders decked.
 Hit **📸 SHARE RESULT CARD** to get a picture of your run — grade, time, recap, stats —
 drawn locally on a canvas (like everything else) and handed to your device's share
-sheet, or saved as a PNG where sharing isn't available. Restarts use a shortened
+sheet, or saved as a PNG where sharing isn't available. The card carries your
+**challenge link as text**, so anyone who sees the image can type it in and race your
+exact mountain and time. Restarts use a shortened
 countdown after the first race, and `Esc` returns to the title screen.
 
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results

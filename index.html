@@ -1919,7 +1919,11 @@ function showResults(){
   document.getElementById('shareBtn').style.display=player.finished?'block':'none';
   SHARE_DATA=player.finished?{ place, time:player.finishTime, rank:player.rank||null,
     recap:raceRecap(order,place), newPB:!!player.newPB,
-    mode:MODE==='classic'?'CLASSIC MOUNTAIN':'DAILY MOUNTAIN '+seedLabel(CUR_SEED) }:null;
+    mode:MODE==='classic'?'CLASSIC MOUNTAIN':'DAILY MOUNTAIN '+seedLabel(CUR_SEED),
+    // the card always carries the PUBLIC challenge url — a screenshot of a
+    // local run should still hand strangers a working race-me link
+    chal:'pranshuparmar.github.io/downhill-mayhem/?c='
+      +(MODE==='classic'?('c-'+player.finishTime.toFixed(2)):('d-'+CUR_SEED+'-'+player.finishTime.toFixed(2))) }:null;
   const rs=document.getElementById('rankStamp');
   if(player.finished&&player.rank){
     const d=RANK_DISPLAY[player.rank];
@@ -1973,10 +1977,15 @@ function buildResultCard(){
   g.fillText('TOP '+Math.round(ST.topSpeed)+' km/h · AIR '+ST.biggestAir.toFixed(1)+'s · TRICKS '
     +ST.tricksLanded+' · DECKED '+ST.decked,cx,934);
   g.font=font(28,700); g.fillStyle='#9fd'; g.fillText(S.mode,cx,978);
-  g.font=font(28,700); g.fillStyle='#fff';
-  g.fillText('PLAY FREE → pranshuparmar.github.io/downhill-mayhem',cx,1032);
-  g.font=font(21,400); g.fillStyle='#8fb8ff';
-  g.fillText('github.com/pranshuparmar/downhill-mayhem',cx,1062);
+  // daily links run longer than classic — shrink until the line fits
+  const raceLine='RACE MY TIME → '+S.chal;
+  let fpx=30; g.font=font(fpx,700);
+  while(g.measureText(raceLine).width>1020&&fpx>19){ fpx--; g.font=font(fpx,700); }
+  g.fillStyle='#59ff7a'; g.fillText(raceLine,cx,1024);
+  g.font=font(20,400); g.fillStyle='#cfe3ff';
+  g.fillText('the link carries this exact mountain and my time — beat it',cx,1050);
+  g.font=font(19,400); g.fillStyle='#8fb8ff';
+  g.fillText('free · no ads · github.com/pranshuparmar/downhill-mayhem',cx,1072);
   return c;
 }
 function shareResult(){
@@ -1986,7 +1995,7 @@ function shareResult(){
     const file=new File([blob],'downhill-mayhem-result.png',{type:'image/png'});
     if(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]})){
       try{ await navigator.share({files:[file],title:'DOWNHILL MAYHEM',
-        text:'My DOWNHILL MAYHEM run — race me: https://pranshuparmar.github.io/downhill-mayhem/'}); return; }
+        text:'Beat my DOWNHILL MAYHEM time: https://'+SHARE_DATA.chal}); return; }
       catch(e){ if(e&&e.name==='AbortError') return; }   // user closed the sheet
     }
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
@@ -2414,6 +2423,7 @@ window.GAME={
   get musicVol(){ return AudioSys.musicGain?AudioSys.musicGain.gain.value:0; },
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
+  get shareData(){ return SHARE_DATA; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
