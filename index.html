@@ -110,10 +110,12 @@
   #ghLink:hover { text-decoration:underline; }
   #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
   #target { position:absolute; top:70px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:15px; color:#59ff7a; }
-  #chalBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
+  #chalBtn, #homeBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
     font-size:14px; color:#fff; background:rgba(255,140,0,.35); border:2px solid #fff; box-shadow:3px 3px 0 rgba(0,0,0,.7);
     cursor:pointer; letter-spacing:.5px; }
   #chalBtn:hover { background:rgba(255,140,0,.6); }
+  #homeBtn { margin-top:8px; background:rgba(80,140,255,.30); }
+  #homeBtn:hover { background:rgba(80,140,255,.55); }
   #controls { margin-top:26px; display:grid; grid-template-columns:auto auto; gap:4px 18px; font-size:14px;
     font-style:normal; text-align:left; background:rgba(0,0,0,.5); padding:14px 22px; border:2px solid rgba(255,255,255,.25); }
   #controls b { color:#ffd23f; font-style:italic; }
@@ -230,7 +232,7 @@
     <div id="trickWrap" class="hidden"><div id="trickFill"></div></div>
     <div id="count" class="hidden"></div>
     <div id="muteTag" class="hidden">🔇 MUTED</div>
-    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; ↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute &nbsp;·&nbsp; G ghost</div>
+    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; ↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute &nbsp;·&nbsp; G ghost &nbsp;·&nbsp; ESC title</div>
   </div>
 
   <div id="title">
@@ -247,7 +249,7 @@
       <span><b>↓ / S in air</b></span><span>Backflip</span>
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
       <span><b>E / F</b></span><span>Punch / Kick — both work mid-air; hits pay boost, extra airborne or boosting</span>
-      <span><b>R · M · T · G</b></span><span>Restart · Mute · CRT filter · Ghost on/off</span>
+      <span><b>R · M · T · G · ESC</b></span><span>Restart · Mute · CRT · Ghost · Back to title (Daily lives there)</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
     <div id="modeSwap"></div>
@@ -284,7 +286,8 @@
       <div id="resStats"></div>
       <table id="resTable"></table>
       <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
-      <div id="resAgain">PRESS R TO RACE AGAIN</div>
+      <button id="homeBtn">⌂ TITLE SCREEN — CLASSIC / DAILY MOUNTAIN</button>
+      <div id="resAgain">R — RACE AGAIN &nbsp;·&nbsp; ESC — TITLE SCREEN</div>
     </div>
   </div>
 
@@ -1915,6 +1918,10 @@ function initHud(){
   // challenge-a-friend: copy a link that carries this mountain + your time
   const btn=document.getElementById('chalBtn');
   const stopper=e=>e.stopPropagation();
+  // the way back out: results -> title, where Classic/Daily is picked
+  const hb=document.getElementById('homeBtn');
+  hb.addEventListener('pointerdown',stopper);
+  hb.addEventListener('click',e=>{ e.stopPropagation(); goTitle(); });
   btn.addEventListener('pointerdown',stopper);
   btn.addEventListener('click',e=>{
     e.stopPropagation();
