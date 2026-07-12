@@ -658,6 +658,10 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Space') pressQueue.hop=nowS();
   else if(e.code==='KeyE') pressQueue.punch=nowS();
   else if(e.code==='KeyF') pressQueue.kick=nowS();
+  // title-screen mode keys must beat the trick keys in this chain — C is
+  // also the heel clicker, and the trick branch would shadow it forever
+  else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
+  else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyZ'){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyX'){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyC'){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
@@ -667,8 +671,6 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='Enter') pressQueue.enter=true;
   else if(e.code==='KeyR'){ if(!DEMO) resetRace(); }
   else if(e.code==='Escape'){ if(!DEMO&&state!=='boot') goTitle(); }
-  else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
-  else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyG'){ ghostShow=!ghostShow; paintGhostBtn(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT') toggleCRT();
