@@ -1940,54 +1940,77 @@ function showResults(){
 // school grades with a verdict, so nobody has to know what an "S rank" is
 const RANK_DISPLAY={ S:['A+','LEGENDARY'], A:['A','GREAT RUN'], B:['B','SOLID RUN'],
   C:['C','SCRAPPY'], D:['F','MAULED'] };
-// ---- shareable result card: drawn on a canvas, like everything else --------
+// ---- shareable result card: a real frame of the game with the stamp on it --
 let SHARE_DATA=null;
-function wrapCardText(g,text,x,y,maxW,lh){
-  const words=(text||'').split(' '); let line='';
-  for(const w of words){ const t=line?line+' '+w:w;
-    if(g.measureText(t).width>maxW&&line){ g.fillText(line,x,y); y+=lh; line=w; } else line=t; }
-  if(line) g.fillText(line,x,y);
-}
 function buildResultCard(){
   const W=1080,H=1080,c=document.createElement('canvas'); c.width=W; c.height=H;
-  const g=c.getContext('2d'), S=SHARE_DATA, ST=RACE_STATS, cx=W/2;
+  const g=c.getContext('2d'), S=SHARE_DATA, cx=W/2;
   const font=(px,w)=>'italic '+(w||900)+' '+px+'px Arial,Helvetica,sans-serif';
+  // fallback bed, in case the GL grab fails anywhere exotic
   const grd=g.createLinearGradient(0,0,0,H);
   grd.addColorStop(0,'#16233c'); grd.addColorStop(0.55,'#0b1424'); grd.addColorStop(1,'#050a12');
   g.fillStyle=grd; g.fillRect(0,0,W,H);
-  g.fillStyle='rgba(0,0,0,0.15)'; for(let y=0;y<H;y+=4) g.fillRect(0,y,W,2);   // scanlines
-  g.textAlign='center';
-  g.save(); g.transform(1,0,-0.14,1,26,0);   // the logo's skew
-  g.font=font(84); g.fillStyle='rgba(0,0,0,.85)'; g.fillText('DOWNHILL',cx+7,127);
-  g.fillStyle='#fff'; g.fillText('DOWNHILL',cx,120);
-  g.font=font(120); g.fillStyle='#a33'; g.fillText('MAYHEM',cx+8,244);
-  g.fillStyle='#ffd23f'; g.fillText('MAYHEM',cx,236);
+  // the background IS the game: re-render the results orbit shot and crop a
+  // centre square of the live frame (drawImage right after render keeps the
+  // buffer valid without preserveDrawingBuffer)
+  try{
+    renderer.render(scene,camera);
+    const src=renderer.domElement, side=Math.min(src.width,src.height);
+    g.drawImage(src,(src.width-side)/2,(src.height-side)/2,side,side,0,0,W,H);
+  }catch(_){}
+  // adrenaline: speed streaks raking in from the corners
+  g.save(); g.translate(cx,H*0.46);
+  for(let i=0;i<26;i++){
+    const a=(i/26)*Math.PI*2+0.12, r0=430+(i%5)*40, r1=r0+150+(i%3)*90;
+    g.strokeStyle='rgba(255,255,255,'+(0.05+(i%3)*0.035)+')'; g.lineWidth=2+(i%3)*2;
+    g.beginPath(); g.moveTo(Math.cos(a)*r0,Math.sin(a)*r0*0.9);
+    g.lineTo(Math.cos(a)*r1,Math.sin(a)*r1*0.9); g.stroke();
+  }
   g.restore();
+  // legibility: dark press at top and bottom, then the CRT scanlines
+  let sh=g.createLinearGradient(0,0,0,330);
+  sh.addColorStop(0,'rgba(4,8,16,.88)'); sh.addColorStop(1,'rgba(4,8,16,0)');
+  g.fillStyle=sh; g.fillRect(0,0,W,330);
+  sh=g.createLinearGradient(0,640,0,H);
+  sh.addColorStop(0,'rgba(4,8,16,0)'); sh.addColorStop(1,'rgba(4,8,16,.92)');
+  g.fillStyle=sh; g.fillRect(0,640,W,H-640);
+  g.fillStyle='rgba(0,0,0,0.14)'; for(let y=0;y<H;y+=4) g.fillRect(0,y,W,2);
+  g.textAlign='center';
+  // the logo, skewed like the title screen
+  g.save(); g.transform(1,0,-0.14,1,26,0);
+  g.font=font(92); g.fillStyle='rgba(0,0,0,.85)'; g.fillText('DOWNHILL',cx+7,135);
+  g.fillStyle='#fff'; g.fillText('DOWNHILL',cx,128);
+  g.font=font(130); g.fillStyle='#a33'; g.fillText('MAYHEM',cx+8,260);
+  g.fillStyle='#ffd23f'; g.fillText('MAYHEM',cx,252);
+  g.restore();
+  // the grade, stamped at an angle exactly like the results screen
   const disp=S.rank?RANK_DISPLAY[S.rank]:null;
   const col={S:'#ffd23f',A:'#59ff7a',B:'#6fc3ff',C:'#ffffff',D:'#ff7a6f'}[S.rank]||'#fff';
   if(disp){
-    g.font=font(290); g.fillStyle='rgba(0,0,0,.85)'; g.fillText(disp[0],cx+10,586);
-    g.fillStyle=col; g.fillText(disp[0],cx,576);
-    g.font=font(44,700); g.fillText(disp[1],cx,642);
+    g.save(); g.translate(cx,452); g.rotate(0.12);
+    g.font=font(230);
+    const bw=Math.max(g.measureText(disp[0]).width+96,340);
+    g.fillStyle='rgba(0,0,0,.55)'; g.fillRect(-bw/2,-152,bw,312);
+    g.lineWidth=10; g.strokeStyle=col; g.strokeRect(-bw/2,-152,bw,312);
+    g.fillStyle='rgba(0,0,0,.85)'; g.fillText(disp[0],8,66);
+    g.fillStyle=col; g.fillText(disp[0],0,58);
+    g.font=font(38,700); g.fillText(disp[1],0,128);
+    g.restore();
   }
-  g.font=font(62); g.fillStyle='#fff';
-  g.fillText(ordinal(S.place).toUpperCase()+' PLACE — '+fmtTime(S.time),cx,736);
-  if(S.newPB){ g.font=font(36,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,788); }
-  g.font=font(32,700); g.fillStyle='#cfe3ff';
-  wrapCardText(g,S.recap,cx,S.newPB?842:818,940,42);
-  g.font=font(30,700); g.fillStyle='#ffd23f';
-  g.fillText('TOP '+Math.round(ST.topSpeed)+' km/h · AIR '+ST.biggestAir.toFixed(1)+'s · TRICKS '
-    +ST.tricksLanded+' · DECKED '+ST.decked,cx,934);
-  g.font=font(28,700); g.fillStyle='#9fd'; g.fillText(S.mode,cx,978);
-  // daily links run longer than classic — shrink until the line fits
+  g.font=font(64); g.fillStyle='rgba(0,0,0,.85)';
+  const placeLine=ordinal(S.place).toUpperCase()+' — '+fmtTime(S.time);
+  g.fillText(placeLine,cx+5,795); g.fillStyle='#fff'; g.fillText(placeLine,cx,790);
+  g.font=font(27,700); g.fillStyle='#9fd'; g.fillText(S.mode,cx,836);
+  if(S.newPB){ g.font=font(36,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,892); }
+  // the challenge: the whole point of the card (shrink until daily links fit)
   const raceLine='RACE MY TIME → '+S.chal;
-  let fpx=30; g.font=font(fpx,700);
+  let fpx=31; g.font=font(fpx,700);
   while(g.measureText(raceLine).width>1020&&fpx>19){ fpx--; g.font=font(fpx,700); }
-  g.fillStyle='#59ff7a'; g.fillText(raceLine,cx,1024);
+  g.fillStyle='#59ff7a'; g.fillText(raceLine,cx,984);
   g.font=font(20,400); g.fillStyle='#cfe3ff';
-  g.fillText('the link carries this exact mountain and my time — beat it',cx,1050);
-  g.font=font(19,400); g.fillStyle='#8fb8ff';
-  g.fillText('free · no ads · github.com/pranshuparmar/downhill-mayhem',cx,1072);
+  g.fillText('this link carries my exact mountain and time — beat it',cx,1014);
+  g.font=font(18,400); g.fillStyle='#8fb8ff';
+  g.fillText('free · no ads · in your browser · github.com/pranshuparmar/downhill-mayhem',cx,1050);
   return c;
 }
 function shareResult(){
