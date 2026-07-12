@@ -49,6 +49,7 @@ no build step, no npm, no server, no network.
 | `T` | Toggle the CRT scanline/vignette filter |
 | `G` | Toggle the ghost of your best run |
 | `Esc` | Back to the title screen — switch between Classic and the Daily there (results screen has a ⌂ button too) |
+| `⛶` (top-right) | Fullscreen on/off — on desktop and mobile alike |
 
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
