@@ -52,7 +52,8 @@ no build step, no npm, no server, no network.
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
 Start a trick in the air and *land after its bar fills* to bank boost meter; land mid-trick
-and you eat dirt. Chain tricks in one jump for bonus meter, and clean riding trickles
+and you eat dirt — though a trick that's *nearly* done can be saved: no payout, a wobble,
+but you keep the bike under you. Chain tricks in one jump for bonus meter, and clean riding trickles
 meter in on its own — crashing dumps most of it. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
 lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
