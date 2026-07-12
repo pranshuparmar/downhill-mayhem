@@ -110,12 +110,17 @@
   #ghLink:hover { text-decoration:underline; }
   #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
   #target { position:absolute; top:70px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:15px; color:#59ff7a; }
-  #chalBtn, #homeBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
+  #chalBtn, #homeBtn, #shareBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
     font-size:14px; color:#fff; background:rgba(255,140,0,.35); border:2px solid #fff; box-shadow:3px 3px 0 rgba(0,0,0,.7);
     cursor:pointer; letter-spacing:.5px; }
   #chalBtn:hover { background:rgba(255,140,0,.6); }
+  #shareBtn { margin-top:8px; background:rgba(90,220,130,.28); }
+  #shareBtn:hover { background:rgba(90,220,130,.5); }
   #homeBtn { margin-top:8px; background:rgba(80,140,255,.30); }
   #homeBtn:hover { background:rgba(80,140,255,.55); }
+  #resFoot { text-align:center; margin-top:10px; font-size:11px; font-style:italic; }
+  #resFoot a { color:#8fb8ff; text-decoration:none; }
+  #resFoot a:hover { text-decoration:underline; }
   #fsBtn { position:absolute; top:12px; right:12px; z-index:6; width:38px; height:38px;
     display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;
     background:rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.5); cursor:pointer;
@@ -133,8 +138,8 @@
 
   /* ---- Results ---- */
   #results { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; color:#fff; background:rgba(5,8,14,.45); }
-  #resPanel { position:relative; background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); }
+    justify-content:center; color:#fff; background:rgba(5,8,14,.45); overflow-y:auto; }
+  #resPanel { position:relative; background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); margin:auto; }
   #rankStamp { position:absolute; top:-22px; right:-18px; font-size:58px; font-style:italic; font-weight:900;
     padding:0 16px; border:4px solid currentColor; border-radius:8px; transform:rotate(12deg);
     background:rgba(0,0,0,.65); text-shadow:3px 3px 0 rgba(0,0,0,.8); }
@@ -181,6 +186,7 @@
   #tT3 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   #tT4 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
+  #tCRT { top:calc(12px + env(safe-area-inset-top)); right:calc(272px + env(safe-area-inset-right)); }
   #tGhost { top:calc(12px + env(safe-area-inset-top)); right:calc(220px + env(safe-area-inset-right)); }
   #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(168px + env(safe-area-inset-right)); }
   #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(116px + env(safe-area-inset-right)); }
@@ -194,6 +200,22 @@
 
   /* ---- compact HUD on touch devices / small screens ---- */
   body.touch #hint, body.touch #muteTag { display:none; }
+  /* compact results on touch: the panel scrolls instead of clipping, and the
+     grade stamp moves inline where it can actually be read */
+  body.touch #results { padding:8px 0; }
+  body.touch #resPanel { padding:8px 14px; min-width:min(420px,94vw); max-width:94vw; }
+  body.touch #rankStamp { position:static; width:fit-content; margin:0 auto 2px; transform:rotate(-2deg);
+    font-size:30px; padding:0 10px; border-width:3px; }
+  body.touch #rankStamp .rl { font-size:9px; margin:-2px 0 4px; }
+  body.touch #resTitle { font-size:22px; }
+  body.touch #resSub { font-size:12px; }
+  body.touch #resRecap { font-size:10px; }
+  body.touch #resStats { font-size:9px; margin:0 0 6px; }
+  body.touch #resTable { font-size:12px; }
+  body.touch #resTable td { padding:2px 6px; }
+  body.touch #chalBtn, body.touch #homeBtn, body.touch #shareBtn { padding:5px 10px; font-size:11px; margin-top:6px; }
+  body.touch #resAgain { font-size:10px; }
+  body.touch #resFoot { font-size:9px; margin-top:6px; }
   body.touch #gap { top:66px; left:18px; font-size:13px; }
   body.touch #boostWrap { left:16px; top:94px; bottom:auto; width:150px; }
   body.touch #boostLabel { font-size:11px; }
@@ -277,6 +299,7 @@
     <div class="tbtn trick" id="tT2">SUPER<br>MAN</div>
     <div class="tbtn trick" id="tT3">HEEL<br>CLICK</div>
     <div class="tbtn trick" id="tT4">BACK<br>FLIP</div>
+    <div class="tbtn tiny" id="tCRT">📺</div>
     <div class="tbtn tiny" id="tGhost">👻</div>
     <div class="tbtn tiny" id="tMute">🔊</div>
     <div class="tbtn tiny" id="tRestart">⟳</div>
@@ -294,8 +317,10 @@
       <div id="resStats"></div>
       <table id="resTable"></table>
       <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
+      <button id="shareBtn">📸 SHARE RESULT CARD</button>
       <button id="homeBtn">⌂ TITLE SCREEN — CLASSIC / DAILY MOUNTAIN</button>
       <div id="resAgain">R — RACE AGAIN &nbsp;·&nbsp; ESC — TITLE SCREEN</div>
+      <div id="resFoot"><a href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a></div>
     </div>
   </div>
 
@@ -633,6 +658,10 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Space') pressQueue.hop=nowS();
   else if(e.code==='KeyE') pressQueue.punch=nowS();
   else if(e.code==='KeyF') pressQueue.kick=nowS();
+  // title-screen mode keys must beat the trick keys in this chain — C is
+  // also the heel clicker, and the trick branch would shadow it forever
+  else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
+  else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyZ'){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyX'){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyC'){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
@@ -642,13 +671,15 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='Enter') pressQueue.enter=true;
   else if(e.code==='KeyR'){ if(!DEMO) resetRace(); }
   else if(e.code==='Escape'){ if(!DEMO&&state!=='boot') goTitle(); }
-  else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
-  else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyG'){ ghostShow=!ghostShow; paintGhostBtn(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
-  else if(e.code==='KeyT'){ document.getElementById('crt').classList.toggle('off');
-    document.getElementById('vig').classList.toggle('off'); }
+  else if(e.code==='KeyT') toggleCRT();
 });
+function toggleCRT(){
+  const off=document.getElementById('crt').classList.toggle('off');
+  document.getElementById('vig').classList.toggle('off');
+  const b=document.getElementById('tCRT'); if(b) b.style.opacity=off?'0.4':'';
+}
 window.addEventListener('keyup',e=>{ const a=KEYMAP[e.code]; if(a) keys[a]=false; });
 // backgrounding the tab/app silences the engine (frames already halt; audio would not)
 document.addEventListener('visibilitychange',()=>{
@@ -687,6 +718,9 @@ function initTouch(){
   bind('tRestart',()=>{ if(!DEMO) resetRace(); });
   bind('tHome',()=>{ if(!DEMO) goTitle(); });
   bind('tMute',()=>AudioSys.toggleMute());
+  const tCrtEl=document.getElementById('tCRT');
+  tCrtEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure(); toggleCRT(); });
+  tCrtEl.addEventListener('contextmenu',e=>e.preventDefault());
   // ghost visibility is a latch like boost, not a momentary press
   const tGhostEl=document.getElementById('tGhost');
   tGhostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
@@ -1884,6 +1918,14 @@ function showResults(){
   document.getElementById('resSub').textContent=sub;
   document.getElementById('resRecap').textContent=raceRecap(order,place);
   document.getElementById('chalBtn').style.display=player.finished?'block':'none';
+  document.getElementById('shareBtn').style.display=player.finished?'block':'none';
+  SHARE_DATA=player.finished?{ place, time:player.finishTime, rank:player.rank||null,
+    recap:raceRecap(order,place), newPB:!!player.newPB,
+    mode:MODE==='classic'?'CLASSIC MOUNTAIN':'DAILY MOUNTAIN '+seedLabel(CUR_SEED),
+    // the card always carries the PUBLIC challenge url — a screenshot of a
+    // local run should still hand strangers a working race-me link
+    chal:'pranshuparmar.github.io/downhill-mayhem/?c='
+      +(MODE==='classic'?('c-'+player.finishTime.toFixed(2)):('d-'+CUR_SEED+'-'+player.finishTime.toFixed(2))) }:null;
   const rs=document.getElementById('rankStamp');
   if(player.finished&&player.rank){
     const d=RANK_DISPLAY[player.rank];
@@ -1898,6 +1940,95 @@ function showResults(){
 // school grades with a verdict, so nobody has to know what an "S rank" is
 const RANK_DISPLAY={ S:['A+','LEGENDARY'], A:['A','GREAT RUN'], B:['B','SOLID RUN'],
   C:['C','SCRAPPY'], D:['F','MAULED'] };
+// ---- shareable result card: a real frame of the game with the stamp on it --
+let SHARE_DATA=null;
+function buildResultCard(){
+  const W=1080,H=1080,c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d'), S=SHARE_DATA, cx=W/2;
+  const font=(px,w)=>'italic '+(w||900)+' '+px+'px Arial,Helvetica,sans-serif';
+  // fallback bed, in case the GL grab fails anywhere exotic
+  const grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'#16233c'); grd.addColorStop(0.55,'#0b1424'); grd.addColorStop(1,'#050a12');
+  g.fillStyle=grd; g.fillRect(0,0,W,H);
+  // the background IS the game: re-render the results orbit shot and crop a
+  // centre square of the live frame (drawImage right after render keeps the
+  // buffer valid without preserveDrawingBuffer)
+  try{
+    renderer.render(scene,camera);
+    const src=renderer.domElement, side=Math.min(src.width,src.height);
+    g.drawImage(src,(src.width-side)/2,(src.height-side)/2,side,side,0,0,W,H);
+  }catch(_){}
+  // adrenaline: speed streaks raking in from the corners
+  g.save(); g.translate(cx,H*0.46);
+  for(let i=0;i<26;i++){
+    const a=(i/26)*Math.PI*2+0.12, r0=430+(i%5)*40, r1=r0+150+(i%3)*90;
+    g.strokeStyle='rgba(255,255,255,'+(0.05+(i%3)*0.035)+')'; g.lineWidth=2+(i%3)*2;
+    g.beginPath(); g.moveTo(Math.cos(a)*r0,Math.sin(a)*r0*0.9);
+    g.lineTo(Math.cos(a)*r1,Math.sin(a)*r1*0.9); g.stroke();
+  }
+  g.restore();
+  // legibility: dark press at top and bottom, then the CRT scanlines
+  let sh=g.createLinearGradient(0,0,0,330);
+  sh.addColorStop(0,'rgba(4,8,16,.88)'); sh.addColorStop(1,'rgba(4,8,16,0)');
+  g.fillStyle=sh; g.fillRect(0,0,W,330);
+  sh=g.createLinearGradient(0,640,0,H);
+  sh.addColorStop(0,'rgba(4,8,16,0)'); sh.addColorStop(1,'rgba(4,8,16,.92)');
+  g.fillStyle=sh; g.fillRect(0,640,W,H-640);
+  g.fillStyle='rgba(0,0,0,0.14)'; for(let y=0;y<H;y+=4) g.fillRect(0,y,W,2);
+  g.textAlign='center';
+  // the logo, skewed like the title screen
+  g.save(); g.transform(1,0,-0.14,1,26,0);
+  g.font=font(92); g.fillStyle='rgba(0,0,0,.85)'; g.fillText('DOWNHILL',cx+7,135);
+  g.fillStyle='#fff'; g.fillText('DOWNHILL',cx,128);
+  g.font=font(130); g.fillStyle='#a33'; g.fillText('MAYHEM',cx+8,260);
+  g.fillStyle='#ffd23f'; g.fillText('MAYHEM',cx,252);
+  g.restore();
+  // the grade, stamped at an angle exactly like the results screen
+  const disp=S.rank?RANK_DISPLAY[S.rank]:null;
+  const col={S:'#ffd23f',A:'#59ff7a',B:'#6fc3ff',C:'#ffffff',D:'#ff7a6f'}[S.rank]||'#fff';
+  if(disp){
+    g.save(); g.translate(cx,452); g.rotate(0.12);
+    g.font=font(230);
+    const bw=Math.max(g.measureText(disp[0]).width+96,340);
+    g.fillStyle='rgba(0,0,0,.55)'; g.fillRect(-bw/2,-152,bw,312);
+    g.lineWidth=10; g.strokeStyle=col; g.strokeRect(-bw/2,-152,bw,312);
+    g.fillStyle='rgba(0,0,0,.85)'; g.fillText(disp[0],8,66);
+    g.fillStyle=col; g.fillText(disp[0],0,58);
+    g.font=font(38,700); g.fillText(disp[1],0,128);
+    g.restore();
+  }
+  g.font=font(64); g.fillStyle='rgba(0,0,0,.85)';
+  const placeLine=ordinal(S.place).toUpperCase()+' — '+fmtTime(S.time);
+  g.fillText(placeLine,cx+5,795); g.fillStyle='#fff'; g.fillText(placeLine,cx,790);
+  g.font=font(27,700); g.fillStyle='#9fd'; g.fillText(S.mode,cx,836);
+  if(S.newPB){ g.font=font(36,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,892); }
+  // the challenge: the whole point of the card (shrink until daily links fit)
+  const raceLine='RACE MY TIME → '+S.chal;
+  let fpx=31; g.font=font(fpx,700);
+  while(g.measureText(raceLine).width>1020&&fpx>19){ fpx--; g.font=font(fpx,700); }
+  g.fillStyle='#59ff7a'; g.fillText(raceLine,cx,984);
+  g.font=font(20,400); g.fillStyle='#cfe3ff';
+  g.fillText('this link carries my exact mountain and time — beat it',cx,1014);
+  g.font=font(18,400); g.fillStyle='#8fb8ff';
+  g.fillText('free · no ads · in your browser · github.com/pranshuparmar/downhill-mayhem',cx,1050);
+  return c;
+}
+function shareResult(){
+  if(!SHARE_DATA) return;
+  buildResultCard().toBlob(async blob=>{
+    if(!blob) return;
+    const file=new File([blob],'downhill-mayhem-result.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file],title:'DOWNHILL MAYHEM',
+        text:'Beat my DOWNHILL MAYHEM time: https://'+SHARE_DATA.chal}); return; }
+      catch(e){ if(e&&e.name==='AbortError') return; }   // user closed the sheet
+    }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='downhill-mayhem-result.png'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    popup('CARD SAVED — POST IT!','small');
+  },'image/png');
+}
 // one line of colour commentary under the standings
 function raceRecap(order,place){
   const S=RACE_STATS, me=order.indexOf(player);
@@ -1930,6 +2061,12 @@ function initHud(){
   const hb=document.getElementById('homeBtn');
   hb.addEventListener('pointerdown',stopper);
   hb.addEventListener('click',e=>{ e.stopPropagation(); goTitle(); });
+  const sb=document.getElementById('shareBtn');
+  sb.addEventListener('pointerdown',stopper);
+  sb.addEventListener('click',e=>{ e.stopPropagation(); shareResult(); });
+  const rf=document.querySelector('#resFoot a');
+  rf.addEventListener('pointerdown',stopper);
+  rf.addEventListener('click',e=>e.stopPropagation());
   // desktop fullscreen toggle (touch devices use the ⛶ in the button row);
   // pointerdown must not leak into "tap to start / race again"
   const fs=document.getElementById('fsBtn');
@@ -2311,6 +2448,7 @@ window.GAME={
   get musicVol(){ return AudioSys.musicGain?AudioSys.musicGain.gain.value:0; },
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
+  get shareData(){ return SHARE_DATA; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
@@ -2327,6 +2465,7 @@ window.GAME={
     nearestTreeAfter(s){ for(let b=Math.floor(s/10);b<Math.floor((S_MAX)/10);b++){
       const l=colTreeBuckets.get(b); if(l) for(const t of l) if(t.s>s) return {s:t.s,lat:t.lat}; } return null; },
     startMode(m,s){ setMode(m,s); resetRace(); },
+    resultCardURL(){ return SHARE_DATA?buildResultCard().toDataURL('image/png'):null; },
     fastForward(seconds){ FAST=true; const dt=1/60, n=Math.round(seconds/dt);
       for(let i=0;i<n;i++){ if(this.autopilotOn&&!player.finished){ aiThink(player,dt); player.inp.boost=false; }
         updateRace(dt); if(state==='finished'&&riders.every(r=>r.finished)) break; }
