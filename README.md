@@ -27,7 +27,7 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 📱 On phones and tablets, touch controls appear automatically: steer and brake with the
 left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
 boost is tap-to-toggle, and the game asks you to rotate to landscape. The top button
-row covers the PB ghost (👻), mute, restart, home and fullscreen.
+row covers the CRT filter (📺), PB ghost (👻), mute, restart, home and fullscreen.
 
 The whole game is a single self-contained `index.html` — three.js included inside it —
 no build step, no npm, no server, no network.
@@ -75,8 +75,10 @@ in your browser — still no accounts, nothing leaves your machine). Beat it for
 PERSONAL BEST fanfare. The HUD shows the live gap to the rider ahead, every overtake pops
 on screen, and the results screen ends with a one-line recap of how your race actually
 went plus your run's stats — top speed, biggest air, tricks, best combo, riders decked.
-Restarts use a shortened countdown after the first race, and `Esc` returns to the title
-screen.
+Hit **📸 SHARE RESULT CARD** to get a picture of your run — grade, time, recap, stats —
+drawn locally on a canvas (like everything else) and handed to your device's share
+sheet, or saved as a PNG where sharing isn't available. Restarts use a shortened
+countdown after the first race, and `Esc` returns to the title screen.
 
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
 screen — it copies a link that carries the exact mountain and your time. Anyone opening

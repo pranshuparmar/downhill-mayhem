@@ -110,12 +110,17 @@
   #ghLink:hover { text-decoration:underline; }
   #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
   #target { position:absolute; top:70px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:15px; color:#59ff7a; }
-  #chalBtn, #homeBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
+  #chalBtn, #homeBtn, #shareBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
     font-size:14px; color:#fff; background:rgba(255,140,0,.35); border:2px solid #fff; box-shadow:3px 3px 0 rgba(0,0,0,.7);
     cursor:pointer; letter-spacing:.5px; }
   #chalBtn:hover { background:rgba(255,140,0,.6); }
+  #shareBtn { margin-top:8px; background:rgba(90,220,130,.28); }
+  #shareBtn:hover { background:rgba(90,220,130,.5); }
   #homeBtn { margin-top:8px; background:rgba(80,140,255,.30); }
   #homeBtn:hover { background:rgba(80,140,255,.55); }
+  #resFoot { text-align:center; margin-top:10px; font-size:11px; font-style:italic; }
+  #resFoot a { color:#8fb8ff; text-decoration:none; }
+  #resFoot a:hover { text-decoration:underline; }
   #fsBtn { position:absolute; top:12px; right:12px; z-index:6; width:38px; height:38px;
     display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;
     background:rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.5); cursor:pointer;
@@ -133,8 +138,8 @@
 
   /* ---- Results ---- */
   #results { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; color:#fff; background:rgba(5,8,14,.45); }
-  #resPanel { position:relative; background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); }
+    justify-content:center; color:#fff; background:rgba(5,8,14,.45); overflow-y:auto; }
+  #resPanel { position:relative; background:rgba(0,0,0,.72); border:3px solid #fff; box-shadow:6px 6px 0 rgba(0,0,0,.7); padding:22px 34px; min-width:min(480px,92vw); margin:auto; }
   #rankStamp { position:absolute; top:-22px; right:-18px; font-size:58px; font-style:italic; font-weight:900;
     padding:0 16px; border:4px solid currentColor; border-radius:8px; transform:rotate(12deg);
     background:rgba(0,0,0,.65); text-shadow:3px 3px 0 rgba(0,0,0,.8); }
@@ -181,6 +186,7 @@
   #tT3 { right:calc(16px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   #tT4 { right:calc(74px + env(safe-area-inset-right)); bottom:calc(182px + env(safe-area-inset-bottom)); }
   .tbtn.tiny { width:44px; height:44px; font-size:18px; border-width:2px; }
+  #tCRT { top:calc(12px + env(safe-area-inset-top)); right:calc(272px + env(safe-area-inset-right)); }
   #tGhost { top:calc(12px + env(safe-area-inset-top)); right:calc(220px + env(safe-area-inset-right)); }
   #tMute { top:calc(12px + env(safe-area-inset-top)); right:calc(168px + env(safe-area-inset-right)); }
   #tRestart { top:calc(12px + env(safe-area-inset-top)); right:calc(116px + env(safe-area-inset-right)); }
@@ -194,6 +200,22 @@
 
   /* ---- compact HUD on touch devices / small screens ---- */
   body.touch #hint, body.touch #muteTag { display:none; }
+  /* compact results on touch: the panel scrolls instead of clipping, and the
+     grade stamp moves inline where it can actually be read */
+  body.touch #results { padding:8px 0; }
+  body.touch #resPanel { padding:8px 14px; min-width:min(420px,94vw); max-width:94vw; }
+  body.touch #rankStamp { position:static; width:fit-content; margin:0 auto 2px; transform:rotate(-2deg);
+    font-size:30px; padding:0 10px; border-width:3px; }
+  body.touch #rankStamp .rl { font-size:9px; margin:-2px 0 4px; }
+  body.touch #resTitle { font-size:22px; }
+  body.touch #resSub { font-size:12px; }
+  body.touch #resRecap { font-size:10px; }
+  body.touch #resStats { font-size:9px; margin:0 0 6px; }
+  body.touch #resTable { font-size:12px; }
+  body.touch #resTable td { padding:2px 6px; }
+  body.touch #chalBtn, body.touch #homeBtn, body.touch #shareBtn { padding:5px 10px; font-size:11px; margin-top:6px; }
+  body.touch #resAgain { font-size:10px; }
+  body.touch #resFoot { font-size:9px; margin-top:6px; }
   body.touch #gap { top:66px; left:18px; font-size:13px; }
   body.touch #boostWrap { left:16px; top:94px; bottom:auto; width:150px; }
   body.touch #boostLabel { font-size:11px; }
@@ -277,6 +299,7 @@
     <div class="tbtn trick" id="tT2">SUPER<br>MAN</div>
     <div class="tbtn trick" id="tT3">HEEL<br>CLICK</div>
     <div class="tbtn trick" id="tT4">BACK<br>FLIP</div>
+    <div class="tbtn tiny" id="tCRT">📺</div>
     <div class="tbtn tiny" id="tGhost">👻</div>
     <div class="tbtn tiny" id="tMute">🔊</div>
     <div class="tbtn tiny" id="tRestart">⟳</div>
@@ -294,8 +317,10 @@
       <div id="resStats"></div>
       <table id="resTable"></table>
       <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
+      <button id="shareBtn">📸 SHARE RESULT CARD</button>
       <button id="homeBtn">⌂ TITLE SCREEN — CLASSIC / DAILY MOUNTAIN</button>
       <div id="resAgain">R — RACE AGAIN &nbsp;·&nbsp; ESC — TITLE SCREEN</div>
+      <div id="resFoot"><a href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a></div>
     </div>
   </div>
 
@@ -646,9 +671,13 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
   else if(e.code==='KeyG'){ ghostShow=!ghostShow; paintGhostBtn(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
-  else if(e.code==='KeyT'){ document.getElementById('crt').classList.toggle('off');
-    document.getElementById('vig').classList.toggle('off'); }
+  else if(e.code==='KeyT') toggleCRT();
 });
+function toggleCRT(){
+  const off=document.getElementById('crt').classList.toggle('off');
+  document.getElementById('vig').classList.toggle('off');
+  const b=document.getElementById('tCRT'); if(b) b.style.opacity=off?'0.4':'';
+}
 window.addEventListener('keyup',e=>{ const a=KEYMAP[e.code]; if(a) keys[a]=false; });
 // backgrounding the tab/app silences the engine (frames already halt; audio would not)
 document.addEventListener('visibilitychange',()=>{
@@ -687,6 +716,9 @@ function initTouch(){
   bind('tRestart',()=>{ if(!DEMO) resetRace(); });
   bind('tHome',()=>{ if(!DEMO) goTitle(); });
   bind('tMute',()=>AudioSys.toggleMute());
+  const tCrtEl=document.getElementById('tCRT');
+  tCrtEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure(); toggleCRT(); });
+  tCrtEl.addEventListener('contextmenu',e=>e.preventDefault());
   // ghost visibility is a latch like boost, not a momentary press
   const tGhostEl=document.getElementById('tGhost');
   tGhostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
@@ -1884,6 +1916,10 @@ function showResults(){
   document.getElementById('resSub').textContent=sub;
   document.getElementById('resRecap').textContent=raceRecap(order,place);
   document.getElementById('chalBtn').style.display=player.finished?'block':'none';
+  document.getElementById('shareBtn').style.display=player.finished?'block':'none';
+  SHARE_DATA=player.finished?{ place, time:player.finishTime, rank:player.rank||null,
+    recap:raceRecap(order,place), newPB:!!player.newPB,
+    mode:MODE==='classic'?'CLASSIC MOUNTAIN':'DAILY MOUNTAIN '+seedLabel(CUR_SEED) }:null;
   const rs=document.getElementById('rankStamp');
   if(player.finished&&player.rank){
     const d=RANK_DISPLAY[player.rank];
@@ -1898,6 +1934,67 @@ function showResults(){
 // school grades with a verdict, so nobody has to know what an "S rank" is
 const RANK_DISPLAY={ S:['A+','LEGENDARY'], A:['A','GREAT RUN'], B:['B','SOLID RUN'],
   C:['C','SCRAPPY'], D:['F','MAULED'] };
+// ---- shareable result card: drawn on a canvas, like everything else --------
+let SHARE_DATA=null;
+function wrapCardText(g,text,x,y,maxW,lh){
+  const words=(text||'').split(' '); let line='';
+  for(const w of words){ const t=line?line+' '+w:w;
+    if(g.measureText(t).width>maxW&&line){ g.fillText(line,x,y); y+=lh; line=w; } else line=t; }
+  if(line) g.fillText(line,x,y);
+}
+function buildResultCard(){
+  const W=1080,H=1080,c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d'), S=SHARE_DATA, ST=RACE_STATS, cx=W/2;
+  const font=(px,w)=>'italic '+(w||900)+' '+px+'px Arial,Helvetica,sans-serif';
+  const grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'#16233c'); grd.addColorStop(0.55,'#0b1424'); grd.addColorStop(1,'#050a12');
+  g.fillStyle=grd; g.fillRect(0,0,W,H);
+  g.fillStyle='rgba(0,0,0,0.15)'; for(let y=0;y<H;y+=4) g.fillRect(0,y,W,2);   // scanlines
+  g.textAlign='center';
+  g.save(); g.transform(1,0,-0.14,1,26,0);   // the logo's skew
+  g.font=font(84); g.fillStyle='rgba(0,0,0,.85)'; g.fillText('DOWNHILL',cx+7,127);
+  g.fillStyle='#fff'; g.fillText('DOWNHILL',cx,120);
+  g.font=font(120); g.fillStyle='#a33'; g.fillText('MAYHEM',cx+8,244);
+  g.fillStyle='#ffd23f'; g.fillText('MAYHEM',cx,236);
+  g.restore();
+  const disp=S.rank?RANK_DISPLAY[S.rank]:null;
+  const col={S:'#ffd23f',A:'#59ff7a',B:'#6fc3ff',C:'#ffffff',D:'#ff7a6f'}[S.rank]||'#fff';
+  if(disp){
+    g.font=font(290); g.fillStyle='rgba(0,0,0,.85)'; g.fillText(disp[0],cx+10,586);
+    g.fillStyle=col; g.fillText(disp[0],cx,576);
+    g.font=font(44,700); g.fillText(disp[1],cx,642);
+  }
+  g.font=font(62); g.fillStyle='#fff';
+  g.fillText(ordinal(S.place).toUpperCase()+' PLACE — '+fmtTime(S.time),cx,736);
+  if(S.newPB){ g.font=font(36,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,788); }
+  g.font=font(32,700); g.fillStyle='#cfe3ff';
+  wrapCardText(g,S.recap,cx,S.newPB?842:818,940,42);
+  g.font=font(30,700); g.fillStyle='#ffd23f';
+  g.fillText('TOP '+Math.round(ST.topSpeed)+' km/h · AIR '+ST.biggestAir.toFixed(1)+'s · TRICKS '
+    +ST.tricksLanded+' · DECKED '+ST.decked,cx,934);
+  g.font=font(28,700); g.fillStyle='#9fd'; g.fillText(S.mode,cx,978);
+  g.font=font(28,700); g.fillStyle='#fff';
+  g.fillText('PLAY FREE → pranshuparmar.github.io/downhill-mayhem',cx,1032);
+  g.font=font(21,400); g.fillStyle='#8fb8ff';
+  g.fillText('github.com/pranshuparmar/downhill-mayhem',cx,1062);
+  return c;
+}
+function shareResult(){
+  if(!SHARE_DATA) return;
+  buildResultCard().toBlob(async blob=>{
+    if(!blob) return;
+    const file=new File([blob],'downhill-mayhem-result.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file],title:'DOWNHILL MAYHEM',
+        text:'My DOWNHILL MAYHEM run — race me: https://pranshuparmar.github.io/downhill-mayhem/'}); return; }
+      catch(e){ if(e&&e.name==='AbortError') return; }   // user closed the sheet
+    }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='downhill-mayhem-result.png'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    popup('CARD SAVED — POST IT!','small');
+  },'image/png');
+}
 // one line of colour commentary under the standings
 function raceRecap(order,place){
   const S=RACE_STATS, me=order.indexOf(player);
@@ -1930,6 +2027,12 @@ function initHud(){
   const hb=document.getElementById('homeBtn');
   hb.addEventListener('pointerdown',stopper);
   hb.addEventListener('click',e=>{ e.stopPropagation(); goTitle(); });
+  const sb=document.getElementById('shareBtn');
+  sb.addEventListener('pointerdown',stopper);
+  sb.addEventListener('click',e=>{ e.stopPropagation(); shareResult(); });
+  const rf=document.querySelector('#resFoot a');
+  rf.addEventListener('pointerdown',stopper);
+  rf.addEventListener('click',e=>e.stopPropagation());
   // desktop fullscreen toggle (touch devices use the ⛶ in the button row);
   // pointerdown must not leak into "tap to start / race again"
   const fs=document.getElementById('fsBtn');
@@ -2327,6 +2430,7 @@ window.GAME={
     nearestTreeAfter(s){ for(let b=Math.floor(s/10);b<Math.floor((S_MAX)/10);b++){
       const l=colTreeBuckets.get(b); if(l) for(const t of l) if(t.s>s) return {s:t.s,lat:t.lat}; } return null; },
     startMode(m,s){ setMode(m,s); resetRace(); },
+    resultCardURL(){ return SHARE_DATA?buildResultCard().toDataURL('image/png'):null; },
     fastForward(seconds){ FAST=true; const dt=1/60, n=Math.round(seconds/dt);
       for(let i=0;i<n;i++){ if(this.autopilotOn&&!player.finished){ aiThink(player,dt); player.inp.boost=false; }
         updateRace(dt); if(state==='finished'&&riders.every(r=>r.finished)) break; }
