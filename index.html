@@ -2019,12 +2019,16 @@ function popup(text,cls){
 }
 
 // --------------------------------------------------- rider visuals ---------
+// each trick owns an axis the CHASE CAMERA can actually see: no-hander = arms
+// wide + waving (lateral), superman = body visibly detaches from the bike
+// (gap + float), backflip = the whole bike rotates (tight tuck), heel
+// clicker = legs flare out sideways then SNAP together (the click)
 function trickPose(type){
   switch(type){
-    case 'nohander': return {tor:0.35, aLx:-2.5, aLz:0.95, aRx:-2.5, aRz:-0.95, lLx:-0.4, lRx:-0.4, pz:0, py:0};
-    case 'superman': return {tor:0.55, aLx:-0.5, aLz:0.12, aRx:-0.5, aRz:-0.12, lLx:1.7, lRx:1.7, pz:-0.5, py:0.14};
-    case 'backflip': return {tor:1.05, aLx:-1.35, aLz:0.12, aRx:-1.35, aRz:-0.12, lLx:-1.0, lRx:-1.0, pz:0, py:-0.05};
-    case 'heel':     return {tor:1.15, aLx:-1.2, aLz:0.12, aRx:-1.2, aRz:-0.12, lLx:-2.3, lRx:-2.3, pz:0.05, py:0.1};
+    case 'nohander': return {tor:0.18, aLx:-2.5, aLz:1.15, aRx:-2.5, aRz:-1.15, lLx:-0.4, lRx:-0.4, pz:0, py:0};
+    case 'superman': return {tor:0.4, aLx:-0.2, aLz:0.12, aRx:-0.2, aRz:-0.12, lLx:2.05, lRx:2.05, pz:-0.95, py:0.32};
+    case 'backflip': return {tor:1.25, aLx:-1.35, aLz:0.12, aRx:-1.35, aRz:-0.12, lLx:-1.6, lRx:-1.6, pz:0, py:-0.05};
+    case 'heel':     return {tor:1.15, aLx:-1.2, aLz:0.12, aRx:-1.2, aRz:-0.12, lLx:-2.3, lRx:-2.3, pz:0.05, py:0.16};
   }
 }
 function riderVisual(r,dt){
@@ -2077,18 +2081,28 @@ function riderVisual(r,dt){
       r.pedalPhase+=(2+r.vs*0.5)*dt;
       const o=Math.sin(r.pedalPhase*4)*0.4; lLx+=o; lRx-=o;
     }
-    // trick pose blending
+    // trick pose blending (plus each trick's animated signature)
+    let legZ=0;
     if(r.trick){
       const def=TRICKS[r.trick], t=r.trickT;
       const w=clamp(Math.min(t/0.15,(def.dur-t)/0.18),0,1);
-      const p=trickPose(r.trick);
+      const p=trickPose(r.trick), pr=clamp(t/def.dur,0,1);
       tor=lerp(tor,p.tor,w); aLx=lerp(aLx,p.aLx,w); aLz=lerp(aLz,p.aLz,w);
       aRx=lerp(aRx,p.aRx,w); aRz=lerp(aRz,p.aRz,w);
       lLx=lerp(lLx,p.lLx,w); lRx=lerp(lRx,p.lRx,w); pz=p.pz*w; py=p.py*w;
+      if(r.trick==='heel'){
+        // flare the legs wide, then snap them shut — the click, dead readable
+        const s=pr<0.55?(pr/0.55):Math.max(0,1-(pr-0.55)*9);
+        legZ=s*1.35*w;
+      } else if(r.trick==='superman'){
+        py+=Math.sin(pr*Math.PI)*0.12*w;             // the float
+      } else if(r.trick==='nohander'){
+        const wave=Math.sin(t*12)*0.12*w; aLz+=wave; aRz-=wave;   // showboat wave
+      }
     }
     v.torsoG.rotation.x=tor; v.torsoG.rotation.y=0;
     v.armL.rotation.set(aLx,0,aLz); v.armR.rotation.set(aRx,0,aRz);
-    v.legL.rotation.set(lLx,0,0); v.legR.rotation.set(lRx,0,0);
+    v.legL.rotation.set(lLx,0,legZ); v.legR.rotation.set(lRx,0,-legZ);
 
     // strikes aim at the victim's side. The model's x axis is mirrored versus
     // screen space, so a screen-right (lat+) strike uses the mesh at x<0.
