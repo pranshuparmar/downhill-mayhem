@@ -1474,13 +1474,15 @@ function aiThink(r,dt){
     if(gap>2.5){
       const closeV=player.vs+1.5+gap*0.55;
       if(r.vs>closeV){ inp.brake=1; inp.pedal=0; }
-      else if(gap>6&&!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>BOOST_MIN+2) inp.boost=true;
+      else if(gap>3&&!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>BOOST_MIN+2) inp.boost=true;
     }
     else if(gap<-3){ inp.pedal=0; inp.brake=1; }
     else {
-      // hold station at arm's length: gravity keeps pulling downhill, so a
-      // waiting hunter has to ride the brake or he rolls right past his mark
-      const want=gap>1.2?Math.min(2.8,Math.max(player.vs+0.8,gap*1.1)):player.vs;
+      // close the last metres at a RELATIVE overspeed — the cap is on the
+      // closing rate, never the absolute speed, so a moving player gets run
+      // down mid-race and a parked one still isn't overshot (gravity means
+      // a waiting hunter rides the brake to hold station)
+      const want=gap>1.2?player.vs+Math.min(2.8,Math.max(0.8,gap*1.1)):player.vs;
       inp.pedal=r.vs<want-0.4?1:0; inp.brake=r.vs>want+0.4?1:0;
     }
     // steer straight onto the player's handlebars
