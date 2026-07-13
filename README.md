@@ -26,8 +26,10 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 📱 On phones and tablets, touch controls appear automatically: steer and brake with the
 left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
-boost is tap-to-toggle, and the game asks you to rotate to landscape. The top button
-row covers the CRT filter (📺), PB ghost (👻), mute, restart, home and fullscreen.
+boost is tap-to-toggle, and the game asks you to rotate to landscape (or hit the big
+⛶ button on that screen — fullscreen auto-rotates). The top button row covers the CRT
+filter (📺), PB ghost (👻), mute, restart, home and fullscreen. 🎮 Controllers work
+too — plug in a DualShock/Xbox pad and press ✕.
 
 The whole game is a single self-contained `index.html` — three.js included inside it —
 no build step, no npm, no server, no network.
@@ -50,6 +52,7 @@ no build step, no npm, no server, no network.
 | `G` | Toggle the ghost of your best run |
 | `Esc` | Back to the title screen — switch between Classic and the Daily there (results screen has a ⌂ button too) |
 | `⛶` (top-right) | Fullscreen on/off — on desktop and mobile alike |
+| 🎮 Controller | DualShock/Xbox or any standard pad: stick steer · R2 pedal · L2 brake (backflip in air) · R1 boost · ✕ start/hop · □ punch · ○ kick · L1/△/R3 tricks |
 
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
@@ -68,7 +71,9 @@ no lead is safe. Riders get fresh jersey colours every race.
 **Two mountains:** the **Classic** is the same course forever — your lifetime best lives
 there. The **Daily** (press `D` on the title screen) is a brand-new mountain generated
 from today's UTC date, identical for every player in the world, with its own best time.
-New course every day, same rivals, no server involved.
+Every daily rolls a personality of its own — twistier or straighter, steeper chutes,
+more or fewer drops and kickers, and its own alpine/canyon split — so no two days ride
+alike. New course every day, same rivals, no server involved.
 
 **Chasing the mountain:** the game remembers your best time per mountain (stored locally
 in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW

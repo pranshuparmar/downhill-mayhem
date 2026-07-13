@@ -22,8 +22,12 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚵</text></svg>">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  html,body { width:100%; height:100%; overflow:hidden; background:#0b0e12; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#0b0e12; touch-action:manipulation; }
   body { font-family:"Arial Black","Arial Bold",Impact,"Helvetica Neue",Arial,sans-serif; user-select:none; -webkit-user-select:none; }
+  /* iOS Safari ignores user-scalable=no — kill double-tap/pinch zoom over the
+     game surface itself; the scrolling results overlay re-allows vertical pan */
+  #wrap { touch-action:none; }
+  #results { touch-action:pan-y; }
   #wrap { position:fixed; inset:0; }
   #gl { position:absolute; inset:0; width:100%; height:100%; display:block; }
   #fx { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2; }
@@ -196,6 +200,9 @@
   #rotate { position:absolute; inset:0; z-index:7; display:none; flex-direction:column; gap:8px;
     align-items:center; justify-content:center; text-align:center; background:rgba(8,12,18,.88);
     color:#ffd23f; font-style:italic; font-size:26px; pointer-events:none; text-shadow:3px 3px 0 #000; }
+  #rotFull { margin-top:18px; padding:13px 22px; border:3px solid #ffd23f; background:rgba(0,0,0,.55);
+    color:#ffd23f; font-size:19px; font-weight:900; pointer-events:auto; cursor:pointer;
+    box-shadow:4px 4px 0 rgba(0,0,0,.6); }
   @media (orientation:portrait){ body.touch #rotate { display:flex; } }
 
   /* ---- compact HUD on touch devices / small screens ---- */
@@ -278,6 +285,7 @@
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
       <span><b>E / F</b></span><span>Punch / Kick — both work mid-air; hits pay boost, extra airborne or boosting</span>
       <span><b>R · M · T · G · ESC</b></span><span>Restart · Mute · CRT · Ghost · Back to title (Daily lives there)</span>
+      <span><b>🎮 PAD</b></span><span>Stick steer · R2 pedal · L2 brake/flip · R1 boost · ✕ start/hop · □/○ punch/kick · L1 △ R3 tricks</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
     <div id="modeSwap"></div>
@@ -306,7 +314,8 @@
     <div class="tbtn tiny" id="tHome">⌂</div>
     <div class="tbtn tiny" id="tFull">⛶</div>
   </div>
-  <div id="rotate">🔄 ROTATE YOUR PHONE<br><span style="font-size:16px;color:#fff">mayhem needs landscape</span></div>
+  <div id="rotate">🔄 ROTATE YOUR PHONE<br><span style="font-size:16px;color:#fff">mayhem needs landscape</span>
+    <div id="rotFull">⛶&nbsp; GO FULLSCREEN — IT AUTO-ROTATES</div></div>
 
   <div id="results" class="hidden">
     <div id="resPanel">
@@ -365,8 +374,9 @@ function fmtTime(t){ if(t==null) return '—'; const m=Math.floor(t/60), s=t-m*6
   return m+':'+(s<10?'0':'')+s.toFixed(2); }
 
 // ------------------------------------------------------------ config -------
-const SEED=20030616;                       // the Classic mountain: identical every run
+const SEED=20030723;                       // Easter Egg! Downhill Domination's release date — July 23, 2003
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
+let COLD_EDGE=0.32, WARM_EDGE=0.68;        // where the frost ends / the canyon begins (dailies move these)
 function dailySeed(){ const d=new Date(); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }
 function seedLabel(s){ const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   return m[Math.floor(s/100)%100-1]+' '+(s%100); }
@@ -428,15 +438,26 @@ function blur(arr,win,passes){
 function buildTrack(){
   const rng=mulberry32(CUR_SEED);
   NOFF=(CUR_SEED%977)*13.7;   // shifts the terrain noise field per mountain
+  // every non-classic mountain rolls a personality of its own: macro-knobs
+  // (separate rng, so the main stream is untouched) swing the twistiness,
+  // rhythm, steepness, drop/ramp counts and biome bands well outside the
+  // classic's tuning — dailies should FEEL different, not just re-noised
+  const vr=mulberry32((CUR_SEED^0x9e3779)>>>0);
+  const V=CUR_SEED===SEED
+    ?{ twist:1, rhythm:1, chute:1, dropN:4, rampN:12 }
+    :{ twist:0.72+vr()*0.75, rhythm:0.68+vr()*0.85, chute:0.85+vr()*0.5,
+       dropN:2+Math.floor(vr()*5), rampN:7+Math.floor(vr()*6) };
+  COLD_EDGE=CUR_SEED===SEED?0.32:0.18+vr()*0.34;
+  WARM_EDGE=CUR_SEED===SEED?0.68:0.55+vr()*0.35;
   // curvature: alternating straights & sweeping turns, biased back toward heading 0
   let lastTurn=rng()<0.5?1:-1, wasTurn=false, hEst=0;
   const curv=buildProfile(rng, (s)=>{
     if(s< -20) return { len:60, val:0 };
-    if(wasTurn||s<40){ wasTurn=false; return { len:50+rng()*80, val:(rng()*2-1)*0.0008 }; }
+    if(wasTurn||s<40){ wasTurn=false; return { len:(50+rng()*80)*V.rhythm, val:(rng()*2-1)*0.0008 }; }
     wasTurn=true;
     let dir = Math.abs(hEst)>0.9 ? -Math.sign(hEst) : (rng()<0.72 ? -lastTurn : lastTurn);
     lastTurn=dir;
-    const mag=0.0045+rng()*0.004, len=80+rng()*110;
+    const mag=(0.0045+rng()*0.004)*V.twist, len=(80+rng()*110)*V.rhythm;
     hEst+=dir*mag*len;
     return { len, val:dir*mag };
   });
@@ -446,8 +467,8 @@ function buildTrack(){
     if(s>FINISH_S-60) return { len:400, val:-0.06 };
     const r=rng();
     if(r<0.10) return { len:25+rng()*20,  val:-0.04-rng()*0.03 };
-    if(r<0.34) return { len:55+rng()*45,  val:-0.26-rng()*0.09 };
-    return       { len:80+rng()*70,  val:-0.11-rng()*0.08 };
+    if(r<0.34) return { len:55+rng()*45,  val:(-0.26-rng()*0.09)*V.chute };
+    return       { len:80+rng()*70,  val:(-0.11-rng()*0.08)*V.chute };
   });
   blur(curv,7,2); blur(grade,7,2);
   // integrate centreline
@@ -460,15 +481,15 @@ function buildTrack(){
   }
   // sharp step-down drops (cliff launches)
   drops=[];
-  for(let k=0;k<4;k++){
-    const s0=420+k*520+rng()*150, depth=2.4+rng()*1.0;
+  for(let k=0;k<V.dropN;k++){
+    const s0=420+k*(1560/V.dropN)+rng()*150, depth=2.4+rng()*1.0;
     drops.push({s0,depth});
     for(let i=0;i<NSAMP;i++){ const s=S_MIN+i*DS; cy[i]-=depth*smoothstep((s-s0)/4); }
   }
   // jump ramps: pick the flattest spot near each target site (8–12 total)
   ramps=[];
   let sTry=170;
-  while(sTry<2200 && ramps.length<12){
+  while(sTry<2200 && ramps.length<V.rampN){
     let best=null;
     for(let d=-55;d<=55;d+=6){
       const s=sTry+d;
@@ -660,8 +681,10 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='KeyF') pressQueue.kick=nowS();
   // title-screen mode keys must beat the trick keys in this chain — C is
   // also the heel clicker, and the trick branch would shadow it forever
-  else if(e.code==='KeyD'&&DEMO){ setMode('daily'); resetRace(); }
-  else if(e.code==='KeyC'&&DEMO){ setMode('classic'); resetRace(); }
+  // mode keys SWAP the mountain but stay on the title — auto-starting here
+  // meant a stray tap/keypress silently raced you onto the wrong mountain
+  else if(e.code==='KeyD'&&DEMO) setMode('daily');
+  else if(e.code==='KeyC'&&DEMO) setMode('classic');
   else if(e.code==='KeyZ'){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyX'){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyC'){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
@@ -681,6 +704,8 @@ function toggleCRT(){
   const b=document.getElementById('tCRT'); if(b) b.style.opacity=off?'0.4':'';
 }
 window.addEventListener('keyup',e=>{ const a=KEYMAP[e.code]; if(a) keys[a]=false; });
+// iOS Safari zooms on double-tap regardless of the viewport meta — refuse it
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 // backgrounding the tab/app silences the engine (frames already halt; audio would not)
 document.addEventListener('visibilitychange',()=>{
   if(!AudioSys.ctx) return;
@@ -727,8 +752,16 @@ function pollGamepad(){
   if(back&&player&&!player.grounded&&player.airTime>0.1){
     pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); // pull back in the air to flip
   }
-  if(cross||circle||square||tri||l1||share||opts||r3||pad) AudioSys.ensure();
+  if(cross||circle||square||tri||l1||share||opts||r3||pad){
+    AudioSys.ensure();
+    // gamepad input is not a browser "user gesture", so audio can stay locked
+    // for pad-only players — tell them once what unlocks it
+    if(!padAudioHinted&&AudioSys.ctx&&AudioSys.ctx.state!=='running'){
+      padAudioHinted=true; popup('CLICK OR TAP ONCE FOR SOUND','small');
+    }
+  }
 }
+let padAudioHinted=false;
 
 // ---- touch controls (phones/tablets) ----
 const IS_TOUCH=(('ontouchstart' in window)||navigator.maxTouchPoints>0)&&matchMedia('(pointer:coarse)').matches;
@@ -763,6 +796,10 @@ function initTouch(){
   const tCrtEl=document.getElementById('tCRT');
   tCrtEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure(); toggleCRT(); });
   tCrtEl.addEventListener('contextmenu',e=>e.preventDefault());
+  // the portrait overlay's big way out: fullscreen locks landscape by itself
+  const rotFullEl=document.getElementById('rotFull');
+  rotFullEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation();
+    AudioSys.ensure(); enterFullscreen(); });
   // ghost visibility is a latch like boost, not a momentary press
   const tGhostEl=document.getElementById('tGhost');
   tGhostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
@@ -800,7 +837,7 @@ function clearTouchBoost(){
 }
 
 // ------------------------------------------------------------ three --------
-let renderer,scene,camera,fxCanvas,fxCtx;
+let renderer,scene,camera,fxCanvas,fxCtx,youArrow=null;
 const UP=new THREE.Vector3(0,1,0);
 let skyDome,mountains,SUN,HEMI;
 const SUN_COLD=new THREE.Color(0xdfeaff), SUN_MID=new THREE.Color(0xfff1d6), SUN_WARM=new THREE.Color(0xffd9a0);
@@ -814,6 +851,11 @@ function initThree(){
   scene=new THREE.Scene();
   scene.fog=new THREE.Fog(0xc8dcea, 32, 235);
   renderer.setClearColor(0xc8dcea);
+  // the YOU arrow: hangs over the player through the countdown + first 5 s
+  youArrow=new THREE.Mesh(new THREE.ConeGeometry(0.34,0.72,4),
+    new THREE.MeshBasicMaterial({color:0xffd23f,transparent:true,depthTest:false}));
+  youArrow.rotation.x=Math.PI; youArrow.renderOrder=5; youArrow.visible=false;
+  scene.add(youArrow);
   // camera.far sits just past the fog wall so frustum culling actually drops
   // the kilometre of already-invisible terrain ahead (the PS2 way)
   camera=new THREE.PerspectiveCamera(74, innerWidth/innerHeight, 0.3, 330);
@@ -912,7 +954,7 @@ function terrainColor(s,lat,rampH,out){
   else { const t=smoothstep((a-RIDE_W-2)/5); r=lerp(grass.r,rock.r,t); g=lerp(grass.g,rock.g,t); b=lerp(grass.b,rock.b,t); }
   // the descent tells a story: frosty alpine up top, warm canyon at the bottom
   const fAlt=clamp(s/FINISH_S,0,1);
-  const cold=clamp((0.32-fAlt)/0.32,0,1), warm=clamp((fAlt-0.68)/0.32,0,1);
+  const cold=clamp((COLD_EDGE-fAlt)/COLD_EDGE,0,1), warm=clamp((fAlt-WARM_EDGE)/(1-WARM_EDGE),0,1);
   if(cold>0){
     const snow=a>6?clamp(vnoise2(s*0.31+NOFF,lat*0.27)+0.35,0,1)*cold:0;
     r=lerp(r,0.84,snow*0.85); g=lerp(g,0.86,snow*0.85); b=lerp(b,0.92,snow*0.85);
@@ -1268,9 +1310,11 @@ function crashRider(r,cause){
 function handleLanding(r,impact){
   const air=r.airTime;
   r.airTime=0; r.wasOnRamp=false;
+  let landGrade=null;
   if(r.trick){
     const done=r.trickT/TRICKS[r.trick].dur;
-    if(done>=TRICK_FORGIVE) completeTrick(r); // close enough
+    if(done>=TRICK_FORGIVE){ completeTrick(r); // close enough
+      landGrade=done>=0.92?'AMAZING!':'CLOSE ONE!'; }
     else if(done>=TRICK_SAVE){
       // caught it — the trick pays nothing, but you keep the bike under you
       r.trick=null; r.trickT=0; r.pendingMeter=0; r.pendingNames.length=0; r.chain=0;
@@ -1278,7 +1322,7 @@ function handleLanding(r,impact){
       if(r.isPlayer){ shake+=0.35; popup('SAVED IT!','small'); }
     }
     else { crashRider(r,'bail'); return; }
-  }
+  } else if(r.pendingNames.length&&air>0.3) landGrade='PERFECT!';  // banked with room to spare
   if(impact>CRASH_IMPACT){ crashRider(r,'hard'); return; }
   if(impact>STUMBLE_IMPACT){ r.vs*=0.72; if(r.isPlayer){ shake+=0.35; popup('SKETCHY!','small'); } }
   // clean landing: bank the tricks
@@ -1301,6 +1345,9 @@ function handleLanding(r,impact){
     }
   }
   r.pendingMeter=0; r.pendingNames.length=0; r.chain=0;
+  // grade the touchdown — but never over a stumble (SKETCHY already owns that)
+  if(r.isPlayer&&landGrade&&impact<=STUMBLE_IMPACT)
+    setTimeout(()=>popup(landGrade,landGrade==='PERFECT!'?'pb':'small'),300);
 }
 function startTrick(r,type){
   if(!TRICKS[type]||r.trick||r.grounded||r.crashed||r.airTime<TRICK_GRACE) return;
@@ -1723,7 +1770,9 @@ let ghostRec=[], ghostData=null, ghostShow=true, ghostViz=null;
 // the 👻 top button dims while the ghost is hidden (keyboard G repaints it too)
 function paintGhostBtn(){ const el=document.getElementById('tGhost'); if(el) el.style.opacity=ghostShow?'':'0.35'; }
 function loadGhost(){ ghostData=(BEST.ghost&&BEST.ghost.length>30)?BEST.ghost:null; }
-function bestKey(){ return MODE==='classic'?SAVE_KEY:SAVE_KEY+'-d'+CUR_SEED; }
+// the classic key is scoped to its seed: if the classic mountain is ever
+// redefined, stale PBs and ghosts from the old terrain don't haunt the new one
+function bestKey(){ return MODE==='classic'?SAVE_KEY+'-c'+SEED:SAVE_KEY+'-d'+CUR_SEED; }
 function loadBestFor(){ try{ BEST=JSON.parse(localStorage.getItem(bestKey())||'{}')||{}; }catch(e){ BEST={}; } loadGhost(); }
 function saveBest(){ try{ localStorage.setItem(bestKey(),JSON.stringify(BEST)); }catch(e){} }
 
@@ -2128,7 +2177,7 @@ function initHud(){
   const swap=document.getElementById('modeSwap');
   swap.addEventListener('pointerdown',stopper);
   swap.addEventListener('click',e=>{ e.stopPropagation();
-    setMode(MODE==='classic'?'daily':'classic'); resetRace(); });
+    setMode(MODE==='classic'?'daily':'classic'); });   // swap only; start stays a deliberate tap
   document.getElementById('ghLink').addEventListener('pointerdown',stopper);
   hudEls.posBig=hudEls.pos.querySelector('.big');
   hudEls.speedNum=hudEls.speed.querySelector('.num');
@@ -2400,7 +2449,7 @@ function updateCamera(dt){
   // sunlight warms as you descend: crisp alpine light up top, golden valley below
   const refR=DEMO&&demoSubject?demoSubject:player;
   const fAlt=clamp(refR.s/FINISH_S,0,1);
-  const cold=clamp((0.32-fAlt)/0.32,0,1), warm=clamp((fAlt-0.68)/0.32,0,1);
+  const cold=clamp((COLD_EDGE-fAlt)/COLD_EDGE,0,1), warm=clamp((fAlt-WARM_EDGE)/(1-WARM_EDGE),0,1);
   SUN.color.copy(SUN_MID);
   if(cold>0) SUN.color.lerp(SUN_COLD,cold);
   if(warm>0) SUN.color.lerp(SUN_WARM,warm);
@@ -2440,6 +2489,16 @@ function frame(now){
   pollGamepad();
   simFrame(simDt);
   for(const r of riders) riderVisual(r,simDt);
+  // which one is mine? the arrow says, then gets out of the way
+  if(youArrow){
+    const show=!DEMO&&(state==='countdown'||(state==='racing'&&raceTime<5))&&!player.crashed;
+    youArrow.visible=show;
+    if(show){
+      worldPos(player.s,player.lat,player.y+2.5+Math.sin(gameTime*5)*0.14,youArrow.position);
+      youArrow.rotation.y+=dt*2.4;
+      youArrow.material.opacity=state==='countdown'?0.95:clamp(5-raceTime,0,1)*0.95;
+    }
+  }
   updateGhost();
   updateCamera(simDt);
   updateHud();
@@ -2492,6 +2551,8 @@ window.GAME={
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   get shareData(){ return SHARE_DATA; },
+  get youArrowVisible(){ return !!(youArrow&&youArrow.visible); },
+  get biomeEdges(){ return [COLD_EDGE,WARM_EDGE]; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
