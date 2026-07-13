@@ -328,7 +328,7 @@
       <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
       <button id="shareBtn">📸 SHARE RESULT CARD</button>
       <button id="homeBtn">⌂ TITLE SCREEN — CLASSIC / DAILY MOUNTAIN</button>
-      <div id="resAgain">R — RACE AGAIN &nbsp;·&nbsp; ESC — TITLE SCREEN</div>
+      <div id="resAgain">R — RACE AGAIN &nbsp;·&nbsp; ESC / ⌫ — TITLE SCREEN &nbsp;<span style="opacity:.65">(⌫ keeps fullscreen)</span></div>
       <div id="resFoot"><a href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a></div>
     </div>
   </div>
@@ -694,6 +694,9 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='Enter') pressQueue.enter=true;
   else if(e.code==='KeyR'){ if(!DEMO) resetRace(); }
   else if(e.code==='Escape'){ if(!DEMO&&state!=='boot') goTitle(); }
+  // Backspace = menu WITHOUT leaving fullscreen (browsers reserve Esc there,
+  // so it only drops fullscreen and never reaches the page)
+  else if(e.code==='Backspace'){ e.preventDefault(); if(!DEMO&&state!=='boot') goTitle(); }
   else if(e.code==='KeyG'){ ghostShow=!ghostShow; paintGhostBtn(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT') toggleCRT();
