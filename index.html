@@ -2363,8 +2363,11 @@ function riderVisual(r,dt){
       }
     }
     v.person.position.z=v.personHome.z+pz; v.person.position.y=v.personHome.y+py;
-    // boost glow — and a red burn on anyone hunting for payback
-    v.mat.emissive.setHex(r.boosting?0x662200:(r.revengeT>0?0x550000:0x000000));
+    // boost glow — persisted for a beat, because the physics hard-drops
+    // `boosting` to false on every airborne frame: without the hold-over,
+    // rollers and takeoffs strobe the jersey. Red burn = hunting for payback.
+    v.glowT=Math.max((v.glowT||0)-dt*3, r.boosting?1:0);
+    v.mat.emissive.setHex(v.glowT>0.05?0x662200:(r.revengeT>0?0x550000:0x000000));
   }
   // blob shadow
   const gnd=groundHeight(r.s,r.lat);
