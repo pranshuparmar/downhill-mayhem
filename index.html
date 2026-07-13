@@ -688,6 +688,48 @@ document.addEventListener('visibilitychange',()=>{
   else AudioSys.ctx.resume().catch(()=>{});
 });
 
+// ---- gamepad (DualShock 4 or any standard-mapping pad) ----
+// polled once per frame; hold-actions write into `keys` on edges only so the
+// keyboard stays usable alongside it, taps feed the same pressQueue buffer
+const PAD_DEAD=0.35;
+const padHeld={left:false,right:false,pedal:false,brake:false,boost:false};
+const padPrev={};
+function pollGamepad(){
+  const pads=navigator.getGamepads?navigator.getGamepads():[];
+  let gp=null;
+  for(const p of pads){ if(p&&p.connected&&p.mapping==='standard'){ gp=p; break; } }
+  if(!gp) for(const p of pads){ if(p&&p.connected){ gp=p; break; } }
+  if(!gp){ for(const a in padHeld) if(padHeld[a]){ padHeld[a]=false; keys[a]=false; } return; }
+  const btn=i=>{ const b=gp.buttons[i]; return !!b&&(b.pressed||b.value>0.5); };
+  const ax=i=>gp.axes.length>i?gp.axes[i]:0;
+  const pullBack=btn(6)||btn(13)||ax(1)>0.6;      // L2 / d-pad down / stick back
+  const hold={
+    left:  ax(0)<-PAD_DEAD||btn(14),
+    right: ax(0)> PAD_DEAD||btn(15),
+    pedal: btn(7)||btn(12),                       // R2 / d-pad up
+    brake: pullBack,
+    boost: btn(5),                                // R1 held
+  };
+  for(const a in hold){ if(hold[a]!==padHeld[a]){ padHeld[a]=hold[a]; keys[a]=hold[a]; } }
+  const edge=(k,is)=>{ const was=padPrev[k]||false; padPrev[k]=is; return is&&!was; };
+  const cross=edge('b0',btn(0)), circle=edge('b1',btn(1)), square=edge('b2',btn(2)),
+    tri=edge('b3',btn(3)), l1=edge('b4',btn(4)), share=edge('b8',btn(8)),
+    opts=edge('b9',btn(9)), r3=edge('b11',btn(11)), pad=edge('b17',btn(17)),
+    back=edge('back',pullBack);
+  if(cross){ pressQueue.hop=nowS(); pressQueue.enter=true; }
+  if(square) pressQueue.punch=nowS();
+  if(circle) pressQueue.kick=nowS();
+  if(l1){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
+  if(tri){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
+  if(r3||pad){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
+  if(opts) pressQueue.enter=true;
+  if(share&&!DEMO) resetRace();
+  if(back&&player&&!player.grounded&&player.airTime>0.1){
+    pressQueue.trick='backflip'; pressQueue.trickAt=nowS(); // pull back in the air to flip
+  }
+  if(cross||circle||square||tri||l1||share||opts||r3||pad) AudioSys.ensure();
+}
+
 // ---- touch controls (phones/tablets) ----
 const IS_TOUCH=(('ontouchstart' in window)||navigator.maxTouchPoints>0)&&matchMedia('(pointer:coarse)').matches;
 let tBoostEl=null,touchUIEl=null;
@@ -2395,6 +2437,7 @@ function frame(now){
   // hit-stop: landed strikes freeze the world for a beat
   let simDt=dt;
   if(hitStopT>0){ hitStopT-=dt; simDt=dt*0.08; }
+  pollGamepad();
   simFrame(simDt);
   for(const r of riders) riderVisual(r,simDt);
   updateGhost();
