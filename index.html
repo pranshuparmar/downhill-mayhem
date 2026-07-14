@@ -163,6 +163,13 @@
   #resTable .chip { display:inline-block; width:13px; height:13px; border:1px solid #000; margin-right:7px; }
   #resAgain { margin-top:18px; font-size:20px; font-style:italic; color:#fff; animation:blink 1.2s steps(2) infinite; text-align:center; }
 
+  #pauseOv { position:absolute; inset:0; z-index:6; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; color:#fff; background:rgba(5,8,14,.62); }
+  #pauseT { font-style:italic; font-weight:900; font-size:64px; color:#ffd23f; text-shadow:4px 4px 0 #000;
+    letter-spacing:2px; transform:skewX(-6deg); }
+  #pauseS { margin-top:10px; font-style:italic; font-size:16px; color:#9fd; text-shadow:2px 2px 0 #000;
+    animation:blink 1.2s steps(2) infinite; }
+
   #fatal { position:absolute; inset:0; z-index:9; display:flex; align-items:center; justify-content:center;
     color:#fff; background:#301010; font-size:16px; padding:30px; text-align:center; font-style:normal; }
 
@@ -320,6 +327,11 @@
   <div id="rotate">🔄 ROTATE YOUR PHONE<br><span style="font-size:16px;color:#fff">mayhem needs landscape</span>
     <div id="rotFull">⛶&nbsp; GO FULLSCREEN — IT AUTO-ROTATES</div></div>
 
+  <div id="pauseOv" class="hidden">
+    <div id="pauseT">PAUSED</div>
+    <div id="pauseS">press any key — or tap — to drop back in</div>
+  </div>
+
   <div id="results" class="hidden">
     <div id="resPanel">
       <div id="rankStamp"></div>
@@ -395,10 +407,12 @@ const DIFF_ORDER=['chill','mayhem','brutal'];
 // rev scales the whole revenge machine: vendetta length, hunter overspeed,
 // closing rate and windup snap. At BRUTAL's 3x the vendetta outlives the
 // race — a decked rival simply does not let it go until payback lands.
+// company: whether backmarkers keep a struggling player in sight — BRUTAL
+// shows no such mercy, fall off the back and you're alone with the mountain.
 const DIFFS={
-  chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9,  aggr:0.5, cd:1.4,  meter0:[5,18],  rev:0.8 },
-  mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2,  aggr:1,   cd:1,    meter0:[15,35], rev:1 },
-  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.10,  rubP:0.58, rubSat:34, leash:0.03,  corner:5.75, aggr:2.2, cd:0.55, meter0:[40,70], rev:3 },
+  chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9,  aggr:0.5, cd:1.4, meter0:[5,18],  rev:0.8, company:true },
+  mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2,  aggr:1,   cd:1,   meter0:[15,35], rev:1,   company:true },
+  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.12,  rubP:0.60, rubSat:32, leash:0.02,  corner:5.85, aggr:2.5, cd:0.5, meter0:[45,80], rev:3,   company:false },
 };
 let DIFF_ID='mayhem', DIFF=DIFFS.mayhem;
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
@@ -760,6 +774,9 @@ const KEYMAP={ KeyW:'pedal',ArrowUp:'pedal', KeyS:'brake',ArrowDown:'brake',
 window.addEventListener('keydown',e=>{
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
   AudioSys.ensure();
+  // paused: the first key only resumes — swallowed so 'M'/'R'/tricks don't
+  // fire as a surprise side-effect of waking the game up
+  if(PAUSED){ e.preventDefault(); setPaused(false); return; }
   const a=KEYMAP[e.code]; if(a) keys[a]=true;
   if(e.repeat) return;
   if(e.code==='Space') pressQueue.hop=nowS();
@@ -799,12 +816,28 @@ function toggleCRT(){
 window.addEventListener('keyup',e=>{ const a=KEYMAP[e.code]; if(a) keys[a]=false; });
 // iOS Safari zooms on double-tap regardless of the viewport meta — refuse it
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
-// backgrounding the tab/app silences the engine (frames already halt; audio would not)
+// backgrounding the tab/app silences the engine (frames already halt; audio
+// would not) — and mid-race it PAUSES: coming back lands on a PAUSED overlay
+// that waits for a key, tap or pad button instead of dumping you straight
+// back into a moving mountain
+let PAUSED=false, padHeldPaused=false;
+function setPaused(on){
+  if(PAUSED===on) return;
+  PAUSED=on; padHeldPaused=on;   // assume held at pause; a fresh press resumes
+  document.getElementById('pauseOv').classList.toggle('hidden',!on);
+  if(!on){
+    lastT=performance.now();     // never integrate the time spent paused
+    if(AudioSys.ctx&&!document.hidden) AudioSys.ctx.resume().catch(()=>{});
+  }
+}
 document.addEventListener('visibilitychange',()=>{
-  if(!AudioSys.ctx) return;
-  if(document.hidden) AudioSys.ctx.suspend().catch(()=>{});
-  else AudioSys.ctx.resume().catch(()=>{});
+  if(document.hidden){
+    if(AudioSys.ctx) AudioSys.ctx.suspend().catch(()=>{});
+    if(!DEMO&&(state==='racing'||state==='countdown')&&player&&!player.finished) setPaused(true);
+  } else if(!PAUSED&&AudioSys.ctx) AudioSys.ctx.resume().catch(()=>{});
 });
+// any tap resumes — capture phase, so taps landing on HUD buttons count too
+window.addEventListener('pointerdown',()=>{ if(PAUSED) setPaused(false); },{capture:true});
 
 // ---- gamepad (DualShock 4 or any standard-mapping pad) ----
 // polled once per frame; hold-actions write into `keys` on edges only so the
@@ -1738,7 +1771,7 @@ function aiThink(r,dt){
   // the two riders nearest ahead soft-pedal just enough to stay in sight —
   // the leaders race on, so the podium fight is untouched. Players who are
   // giving up (crash-looping, or 2+ minutes in) get left behind for real.
-  if(!DEMO&&gap<-70&&raceTime<120&&RACE_STATS.crashes<6&&!r.finished){
+  if(!DEMO&&DIFF.company&&gap<-70&&raceTime<120&&RACE_STATS.crashes<6&&!r.finished){
     const ahead=riders.filter(o=>!o.isPlayer&&!o.finished&&o.s>player.s);
     if(ahead.length===riders.length-1){
       ahead.sort((a,b)=>a.s-b.s);
@@ -2002,6 +2035,7 @@ function setDiff(id){
 }
 
 function goTitle(){
+  setPaused(false);   // never strand the pause overlay over the title
   AudioSys.stopMusic();
   refreshTitle();
   startDemoRace();
@@ -2068,6 +2102,7 @@ function resetRiders(){
 }
 function resetRace(){
   DEMO=false;
+  setPaused(false);
   resetRiders();
   countDur=racesRun===0?3.8:2.0; racesRun++;   // full ceremony once, quick re-entry after
   document.getElementById('title').classList.add('hidden');
@@ -2596,7 +2631,11 @@ function riderVisual(r,dt){
     // `boosting` to false on every airborne frame: without the hold-over,
     // rollers and takeoffs strobe the jersey. Red burn = hunting for payback.
     v.glowT=Math.max((v.glowT||0)-dt*3, r.boosting?1:0);
-    v.mat.emissive.setHex(v.glowT>0.05?0x662200:(r.revengeT>0?0x550000:0x000000));
+    // the glow is the rider's OWN jersey colour turned hot — a fixed orange
+    // emissive used to tint every jersey towards it (purple read as violet on
+    // boost). Fixed brightness while held, so takeoff never strobes it.
+    if(v.glowT>0.05) v.mat.emissive.setHex(r.color).multiplyScalar(0.55);
+    else v.mat.emissive.setHex(r.revengeT>0?0x550000:0x000000);
   }
   // blob shadow
   const gnd=groundHeight(r.s,r.lat);
@@ -2712,6 +2751,18 @@ function simFrame(dt){
 let lastT=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
+  if(PAUSED){
+    lastT=now;                       // freeze the clock, keep the frame fresh
+    // pad resume on a FRESH press only — a button still held from before the
+    // pause (R2 pedal through an app switch) must not instantly self-resume
+    const pads=navigator.getGamepads?navigator.getGamepads():[];
+    let padDown=false;
+    for(const gp of pads) if(gp&&gp.buttons&&gp.buttons.some(b=>b&&b.pressed)){ padDown=true; break; }
+    if(padDown&&!padHeldPaused) setPaused(false);
+    padHeldPaused=padDown;
+    renderer.render(scene,camera);
+    return;
+  }
   let dt=Math.min((now-lastT)/1000,0.05); lastT=now;
   if(dt<=0) dt=0.0001;
   fps=lerp(fps,1/dt,0.04);
@@ -2787,7 +2838,8 @@ window.GAME={
   get youArrowVisible(){ return !!(youArrow&&youArrow.visible); },
   get biomeEdges(){ return [COLD_EDGE,WARM_EDGE]; },
   get difficulty(){ return DIFF_ID; },
-  get diffKnobs(){ return { pace:DIFF.pace, aggr:DIFF.aggr, rev:DIFF.rev }; },
+  get diffKnobs(){ return { pace:DIFF.pace, aggr:DIFF.aggr, rev:DIFF.rev, company:DIFF.company }; },
+  get paused(){ return PAUSED; },
   get terrainDensity(){ return [TREE_D,ROCK_D]; },
   get musicTheme(){ const t=(AudioSys.music.on&&AudioSys.theme)||musicThemeFor();
     return { bpm:t.bpm, bassType:t.bassType, hatHP:t.hatHP, fill:t.fill }; },

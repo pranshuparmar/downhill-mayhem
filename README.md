@@ -87,10 +87,11 @@ the mountain, `↑`/`↓` the difficulty; tap the rows on touch).
 
 Difficulties: **CHILL** (a pack you can outride cleanly), **MAYHEM** (the game as
 designed — rivals cruise above your clean ceiling; spend boost, tricks, draft or fists),
-and **BRUTAL** (they're 10% faster than your clean ceiling, roll off the gate loaded
+and **BRUTAL** (they're 12% faster than your clean ceiling, roll off the gate loaded
 with boost, swing constantly — and a BRUTAL grudge does not expire: deck a rival and
 they hunt you for the rest of the race, closing faster than physics ought to allow;
-winnable, barely, and never cleanly). Difficulty also scales the revenge machine
+winnable, barely, and never cleanly. Fall off the back on BRUTAL and nobody dawdles
+for you — you're alone with the mountain). Difficulty also scales the revenge machine
 itself: how long a decked rival hunts you, how fast they run you down, and how
 little warning their swing gives. Personal bests and ghosts are
 tracked **per mountain per difficulty**; everything recorded before difficulties
@@ -129,7 +130,10 @@ knock, rock gardens with a stony crack, a boot lands deeper than a fist, and a p
 crash is just you and the dirt. Tuck in behind a rider to slipstream, then swing.
 Butter a landing on the downslope for a CLEAN bonus. The descent itself changes as you
 drop — frosty alpine up top, pine forest in the middle, warm canyon at the bottom.
-Finish within half a second of anyone and you get the PHOTO FINISH freeze. Every race
+Switch apps or tabs mid-race and the game pauses itself — you come back to a
+PAUSED screen and drop back in with any key, tap or pad button, never into a
+mountain that kept moving without you. Finish within half a second of anyone
+and you get the PHOTO FINISH freeze. Every race
 ends with a graded rank stamp, F to A+ with a one-word verdict: your finishing spot sets
 the band (a plain win is an A — LEGENDARY takes style), and tricks, knockdowns and PBs
 fill it. And any rival you deck drops the race plan and *hunts you* — smouldering red,
