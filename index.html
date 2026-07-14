@@ -2855,13 +2855,8 @@ function simFrame(dt){
   updateRace(dt);
 }
 let lastT=performance.now();
-// media capture: when on, the RAF loop idles so a recorder can advance the
-// sim one deterministic frame at a time (GAME.test.stepAndRender) — immune to
-// the headless renderer's variable speed. Never set in normal play.
-let CAPTURING=false;
 function frame(now){
   requestAnimationFrame(frame);
-  if(CAPTURING){ lastT=now; return; }
   if(PAUSED){
     lastT=now;                       // freeze the clock, keep the frame fresh
     // pad resume on a FRESH press only — a button still held from before the
@@ -2984,28 +2979,6 @@ window.GAME={
       for(let i=0;i<n;i++){ if(this.autopilotOn&&!player.finished){ aiThink(player,dt); player.inp.boost=false; }
         updateRace(dt); if(state==='finished'&&riders.every(r=>r.finished)) break; }
       FAST=false; camSnap=true; },
-    // media capture: idle the RAF loop, then advance one full frame (physics +
-    // visuals + camera + render) per call at a fixed dt — deterministic footage
-    captureMode(on){ CAPTURING=!!on; if(on) hitStopT=0; },
-    doTrick(type){ startTrick(player,type); },   // start a trick with its popup, for capture
-    captureTight(on){ this._tight=!!on; },        // pull the camera in for close-up trick footage
-    stepAndRender(dt){
-      simFrame(dt);
-      for(const r of riders) riderVisual(r,dt);
-      if(youArrow) youArrow.visible=false;
-      updateGhost(); updateCamera(dt); updateHud(); drawFx();
-      if(this._tight){                            // tight chase: bigger rider, narrower FOV
-        const c=sampleTrack(player.s,TMP_CAM), fx=Math.sin(c.h), fz=Math.cos(c.h);
-        worldPos(player.s,player.lat,player.y,tmpV);
-        const gB=groundHeight(Math.max(player.s-4.4,S_MIN+2),player.lat*0.7);
-        camera.position.set(tmpV.x-fx*4.4, Math.max(tmpV.y+1.9,gB+1.2), tmpV.z-fz*4.4);
-        camera.lookAt(tmpV.x+fx*3, tmpV.y+1.0, tmpV.z+fz*3);
-        camera.fov=60; camera.updateProjectionMatrix();
-        skyDome.position.copy(camera.position);
-        mountains.position.set(camera.position.x,camera.position.y-22,camera.position.z);
-      }
-      renderer.render(scene,camera);
-    },
   }
 };
 // autopilot replaces keyboard input during fastForward
