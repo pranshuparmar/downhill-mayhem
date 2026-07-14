@@ -6,7 +6,7 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 <p align="center">
   <a href="https://pranshuparmar.github.io/downhill-mayhem/">
-    <img src="media/demo.gif" alt="Twelve seconds of DOWNHILL MAYHEM: a 130 km/h boost into a ramp, a Superman over the pack, kicking DIESEL off his bike at speed — and DIESEL running the player down for payback" width="480">
+    <img src="media/demo.gif" alt="Twelve seconds of DOWNHILL MAYHEM down the ROCKGARDEN canyon: a boost into a ramp, a Superman over the pack, booting a rival off their bike at speed — then that rival running the player down for payback" width="480">
   </a>
   <br>
   <b><a href="https://pranshuparmar.github.io/downhill-mayhem/">▶ PLAY NOW — free, in your browser</a></b>
