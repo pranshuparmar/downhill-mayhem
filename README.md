@@ -59,7 +59,9 @@ out of slow corners, brake before the sweepers, and hit the wooden kickers for a
 Start a trick in the air and *land after its bar fills* to bank boost meter; land mid-trick
 and you eat dirt — though a trick that's *nearly* done can be saved: no payout, a wobble,
 but you keep the bike under you. Chain tricks in one jump for bonus meter, and clean riding trickles
-meter in on its own — crashing dumps most of it. The groomed line is fastest, but the
+meter in on its own — crashing dumps most of it. Monster airs land heavy but rideable
+(air drag caps your fall speed) — what actually bites is casing an upslope face at
+speed. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
 lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
 slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
@@ -85,9 +87,13 @@ the mountain, `↑`/`↓` the difficulty; tap the rows on touch).
 
 Difficulties: **CHILL** (a pack you can outride cleanly), **MAYHEM** (the game as
 designed — rivals cruise above your clean ceiling; spend boost, tricks, draft or fists),
-and **BRUTAL** (they're faster, angrier and swing constantly — winnable, barely).
-Personal bests and ghosts are tracked **per mountain per difficulty**; everything
-recorded before difficulties existed counts as MAYHEM.
+and **BRUTAL** (they're 10% faster than your clean ceiling, roll off the gate loaded
+with boost, swing constantly — and their grudges run half again as long and hit half
+again as hard; winnable, barely, and never cleanly). Difficulty also scales the
+revenge machine itself: how long a decked rival hunts you, how fast they run you
+down, and how little warning their swing gives. Personal bests and ghosts are
+tracked **per mountain per difficulty**; everything recorded before difficulties
+existed counts as MAYHEM.
 
 **Chasing the mountain:** the game remembers your best time per mountain (stored locally
 in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW
@@ -114,7 +120,12 @@ no server and no account.
 behind the menu with spectator camera cuts, arcade attract-mode style, until you press
 start. Your best run rides with you as a translucent ghost (`G` or the 👻 button toggles
 it). A synthesized drum-and-bass loop kicks in at GO — the wind ducks out of its way —
-and intensifies in the final stretch. Tuck in behind a rider to slipstream, then swing.
+and intensifies in the final stretch. **Every mountain has its own groove**: CLASSIC's
+canonical 136 BPM two-step, TIMBERLINE's slower broken-beat minor stomp, ROCKGARDEN's
+148 BPM sawtooth assault — and each daily rolls its own tempo, bass line and drum
+pattern from the seed. The mountain talks back too: trees answer with a hollow wooden
+knock, rock gardens with a stony crack, a boot lands deeper than a fist, and a plain
+crash is just you and the dirt. Tuck in behind a rider to slipstream, then swing.
 Butter a landing on the downslope for a CLEAN bonus. The descent itself changes as you
 drop — frosty alpine up top, pine forest in the middle, warm canyon at the bottom.
 Finish within half a second of anyone and you get the PHOTO FINISH freeze. Every race

@@ -392,16 +392,44 @@ const TERRAINS={
 // mayhem is the canonical game (empty storage suffix, so every PB, ghost and
 // challenge link from before difficulties existed falls back to it)
 const DIFF_ORDER=['chill','mayhem','brutal'];
+// rev scales the whole revenge machine: vendetta length, hunter overspeed,
+// closing rate and windup snap — BRUTAL avengers are genuinely terrifying
 const DIFFS={
-  chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9, aggr:0.5, cd:1.4, meter0:[5,18] },
-  mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2, aggr:1,   cd:1,   meter0:[15,35] },
-  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.075, rubP:0.52, rubSat:38, leash:0.04,  corner:5.5, aggr:1.5, cd:0.7, meter0:[30,55] },
+  chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9,  aggr:0.5, cd:1.4,  meter0:[5,18],  rev:0.8 },
+  mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2,  aggr:1,   cd:1,    meter0:[15,35], rev:1 },
+  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.10,  rubP:0.58, rubSat:34, leash:0.03,  corner:5.75, aggr:2.2, cd:0.55, meter0:[40,70], rev:1.6 },
 };
 let DIFF_ID='mayhem', DIFF=DIFFS.mayhem;
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
 let COLD_EDGE=0.32, WARM_EDGE=0.68;        // where the frost ends / the canyon begins (per-course)
 let TREE_D=1, ROCK_D=0;                    // forestation / rock-garden density for the current course
 function terrLabel(id){ return id==='daily'?'DAILY':TERRAINS[id].label; }
+// ---- per-mountain music: one synth engine, a different groove per course ---
+// pattern tables consumed by AudioSys.playStep. CLASSIC is byte-for-byte the
+// original loop; dailies roll a groove of their own from the seed.
+const MUSIC_THEMES={
+  classic:{ bpm:136, bassType:'square', bassVol:0.30, hatHP:6000, fill:'chirp',
+    kicks:[0,10], snares:[4,12],
+    bass:{0:55,3:55,6:65.41,8:55,11:82.41,14:73.42,16:55,19:49,22:65.41,24:82.41,27:73.42,30:98} },
+  timber:{ bpm:128, bassType:'triangle', bassVol:0.34, hatHP:4600, fill:'tom',
+    kicks:[0,6,10], snares:[4,12],   // broken-beat kick, darker hats, minor bass
+    bass:{0:41.2,3:41.2,6:49,8:41.2,11:61.74,14:55,16:41.2,19:36.71,22:49,24:61.74,27:55,30:73.42} },
+  rock:{ bpm:148, bassType:'sawtooth', bassVol:0.22, hatHP:7000, fill:'riser',
+    kicks:[0,7,10], snares:[4,12,13], // harder, faster, snare double-hit
+    bass:{0:55,2:55,4:65.41,6:55,8:82.41,10:82.41,11:98,14:73.42,16:55,18:55,20:65.41,22:55,24:110,26:98,27:82.41,30:73.42} },
+};
+function musicThemeFor(){
+  if(MODE!=='daily') return MUSIC_THEMES[MODE]||MUSIC_THEMES.classic;
+  const mr=mulberry32((CUR_SEED^0x5bd1e9)>>>0);
+  const th=JSON.parse(JSON.stringify([MUSIC_THEMES.classic,MUSIC_THEMES.timber,MUSIC_THEMES.rock][Math.floor(mr()*3)]));
+  th.bpm=Math.round(126+mr()*24);
+  th.bassType=['square','triangle','sawtooth'][Math.floor(mr()*3)];
+  th.bassVol=th.bassType==='sawtooth'?0.22:0.31;
+  th.hatHP=Math.round(4500+mr()*3000);
+  const tr=[1,1.122,1.335,0.891][Math.floor(mr()*4)];  // transpose: 0/+2/+5/-2 semitones
+  for(const k in th.bass) th.bass[k]=+(th.bass[k]*tr).toFixed(2);
+  return th;
+}
 function dailySeed(){ const d=new Date(); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }
 function seedLabel(s){ const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   return m[Math.floor(s/100)%100-1]+' '+(s%100); }
@@ -409,6 +437,12 @@ const DS=2, S_MIN=-80, S_MAX=2520, FINISH_S=2300, HALF_W=8;
 const RIDE_W=26;                           // rideable hillside half-width
 const LAT_CLAMP=27.5;                      // valley wall
 const G=11.5;                              // arcade gravity
+// terminal fall speed (air drag). Without it, hangtime alone decides big-air
+// landings: vy grows G·t while downslope absorption tops out near grade·vs,
+// so every flight past ~2.6s crashed as FLAT LANDING no matter how well you
+// put it down. Capped, a monster air lands heavy-but-rideable (SKETCHY) and
+// only smacking an upslope face still wipes you out.
+const VT_FALL=17.5;
 const DRAG=0.0030, SOFTCAP_V=33, SLOPE_K=1.48;
 const PEDAL_A=5.8, PEDAL_VMAX=18, BRAKE_A=10.5, ROLL_F=0.35;
 const STEER_BASE=2.6, STEER_VK=0.21, STEER_RESP=7.5, CENTRIF_K=1.35, AIR_CTRL=0.32;
@@ -630,8 +664,24 @@ const AudioSys={
   },
   whoosh(){ this.noiseHit(1300,0.13,0.3); },
   tell(){ this.noiseHit(340,0.16,0.22); this.blip(180,0.12,0.12,'sawtooth'); },
-  strikeLand(vol){ this.thump(85,0.22,0.95*vol); this.noiseHit(700,0.12,0.5*vol); this.noiseHit(1400,0.05,0.3*vol); },
-  crashSnd(vol){ this.thump(70,0.35,0.9*vol); this.noiseHit(500,0.3,0.5*vol); this.noiseHit(2200,0.12,0.25*vol); },
+  // every impact has its own voice: punch = fleshy smack, kick = deep boot,
+  // tree = hollow wooden knock + canopy rustle, rock = hard stony crack,
+  // and crashSnd stays the plain body-tumble for falls/walls/bails
+  lastImpact:'',
+  strikeLand(vol,kind){
+    this.lastImpact=kind==='kick'?'kick':'punch';
+    if(kind==='kick'){ this.thump(58,0.30,1.05*vol); this.noiseHit(420,0.16,0.55*vol); this.noiseHit(950,0.05,0.28*vol); }
+    else { this.thump(85,0.22,0.95*vol); this.noiseHit(700,0.12,0.5*vol); this.noiseHit(1400,0.05,0.3*vol); }
+  },
+  treeSnd(vol){ this.lastImpact='tree';
+    this.blip(210,0.07,0.34*vol,'triangle'); this.noiseHit(900,0.06,0.4*vol);
+    this.noiseHit(3400,0.25,0.16*vol); this.thump(75,0.25,0.5*vol);
+    setTimeout(()=>this.blip(340,0.045,0.16*vol,'triangle'),30); },
+  rockSnd(vol){ this.lastImpact='rock';
+    this.noiseHit(2400,0.045,0.5*vol); this.noiseHit(1300,0.10,0.42*vol);
+    this.blip(2900,0.03,0.10*vol,'square'); this.thump(95,0.16,0.62*vol); },
+  crashSnd(vol,keepTag){ if(!keepTag) this.lastImpact='fall';
+    this.thump(70,0.35,0.9*vol); this.noiseHit(500,0.3,0.5*vol); this.noiseHit(2200,0.12,0.25*vol); },
   chime(){ this.blip(880,0.09,0.25,'triangle'); setTimeout(()=>this.blip(1320,0.14,0.28,'triangle'),70); },
   jingle(pb){ const n=pb?[523,659,784,1046,1318,1568]:[523,659,784,1046];
     n.forEach((f,i)=>setTimeout(()=>this.blip(f,0.16,0.3,'square'),i*(pb?105:130))); },
@@ -640,7 +690,9 @@ const AudioSys={
   countBeep(go){ this.blip(go?900:600, go?0.4:0.12, 0.35,'square'); },
 
   // ---- synthesized race loop (two-step drums + pentatonic bass) ----
-  music:{on:false,timer:null,step:0,next:0}, intense:false,
+  // the groove — tempo, drum pattern, bass line/waveform, hat colour, fill —
+  // comes from the current mountain's MUSIC_THEME (set at every startMusic)
+  music:{on:false,timer:null,step:0,next:0}, intense:false, theme:null,
   oscAt(t,f0,f1,dur,vol,type){ const c=this.ctx,o=c.createOscillator(),g=c.createGain();
     o.type=type; o.frequency.setValueAtTime(f0,t);
     if(f1!==f0) o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
@@ -654,20 +706,24 @@ const AudioSys={
     g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.005);
     g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
     s.start(t); s.stop(t+dur+0.03); },
-  BASS32:{0:55,3:55,6:65.41,8:55,11:82.41,14:73.42,16:55,19:49,22:65.41,24:82.41,27:73.42,30:98},
   playStep(i,t,abs){
-    const hot=this.intense;
-    if(i%16===0||i%16===10) this.oscAt(t,120,42,0.13,0.6,'sine');            // kick
-    if(i%16===4||i%16===12){ this.noiseAt(t,1800,0.09,0.34); this.oscAt(t,190,120,0.06,0.16,'triangle'); } // snare
-    if(i%2===0) this.noiseAt(t,6000,0.03,(i%4===2)?0.10:0.16);               // hats
-    else if(hot) this.noiseAt(t,7000,0.025,0.09);
-    const b=this.BASS32[i];
-    if(b) this.oscAt(t,hot?b*2:b,hot?b*2:b,0.16,0.30,'square');
-    if(!hot&&abs%64===56){ this.oscAt(t,440,660,0.18,0.10,'triangle'); }     // sparse fill
+    const th=this.theme||MUSIC_THEMES.classic, hot=this.intense;
+    if(th.kicks.indexOf(i%16)>=0) this.oscAt(t,120,42,0.13,0.6,'sine');      // kick
+    if(th.snares.indexOf(i%16)>=0){ this.noiseAt(t,1800,0.09,0.34); this.oscAt(t,190,120,0.06,0.16,'triangle'); } // snare
+    if(i%2===0) this.noiseAt(t,th.hatHP,0.03,(i%4===2)?0.10:0.16);           // hats
+    else if(hot) this.noiseAt(t,th.hatHP+1000,0.025,0.09);
+    const b=th.bass[i];
+    if(b) this.oscAt(t,hot?b*2:b,hot?b*2:b,0.16,th.bassVol,th.bassType);
+    if(!hot&&abs%64===56){                                                    // sparse fill, per theme
+      if(th.fill==='tom') this.oscAt(t,160,95,0.22,0.22,'sine');
+      else if(th.fill==='riser') this.noiseAt(t,900,0.3,0.10);
+      else this.oscAt(t,440,660,0.18,0.10,'triangle');
+    }
   },
   startMusic(){ if(!this.started||this.music.on) return;
+    this.theme=musicThemeFor();
     const m=this.music; m.on=true; m.step=0; m.next=this.ctx.currentTime+0.06;
-    m.timer=setInterval(()=>{ const c=this.ctx,SPB=60/136/4;
+    m.timer=setInterval(()=>{ const c=this.ctx,SPB=60/this.theme.bpm/4;
       while(m.next<c.currentTime+0.12){ this.playStep(m.step%32,m.next,m.step); m.step++; m.next+=SPB; }
     },25); },
   stopMusic(){ const m=this.music; m.on=false; if(m.timer){ clearInterval(m.timer); m.timer=null; } },
@@ -1374,9 +1430,16 @@ function crashRider(r,cause){
       :cause==='hard'?'FLAT LANDING!':cause==='wall'?'INTO THE WALL!':'CRASHED!','bad');
     if(cause==='punched'){ const f=document.getElementById('hitflash');
       f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
-    AudioSys.crashSnd(1);
-  } else if(nearPlayer){ AudioSys.crashSnd(0.4); }
+    crashVoice(cause,1);
+  } else if(nearPlayer){ crashVoice(cause,0.4); }
   return true;
+}
+// what the crash SOUNDS like depends on what you hit. A punched/kicked crash
+// keeps the strike's own voice and just adds the tumble under it.
+function crashVoice(cause,vol){
+  if(cause==='tree') AudioSys.treeSnd(vol);
+  else if(cause==='rock') AudioSys.rockSnd(vol);
+  else AudioSys.crashSnd(vol,cause==='punched');
 }
 function handleLanding(r,impact){
   const air=r.airTime;
@@ -1522,7 +1585,7 @@ function riderStep(r,dt){
     r.vs=Math.max(0,r.vs-DRAG*0.4*r.vs*r.vs*dt);
     r.boosting=false;
     if(inp.trick) startTrick(r,inp.trick);
-    r.vy-=G*dt;
+    r.vy=Math.max(r.vy-G*dt,-VT_FALL);
   }
 
   updateTrick(r,dt);
@@ -1608,7 +1671,7 @@ function tryStrike(attacker,kind){
     crashRider(best,'punched');
     if(!DEMO&&(attacker.isPlayer||best.isPlayer)) hitStopT=0.075;  // a landed hit crunches time
     if(attacker.isPlayer) RACE_STATS.decked++;
-    if(nearPlayer||best.isPlayer) AudioSys.strikeLand(attacker.isPlayer||best.isPlayer?1:0.5);
+    if(nearPlayer||best.isPlayer) AudioSys.strikeLand(attacker.isPlayer||best.isPlayer?1:0.5,kind);
     if(attacker.isPlayer){
       const air=!attacker.grounded, boosting=attacker.boosting;
       const gain=HIT_METER+(air?AIR_STRIKE_METER:0)+(boosting?BOOST_STRIKE_METER:0);
@@ -1617,8 +1680,8 @@ function tryStrike(attacker,kind){
         :(kind==='kick'?'BOOT!':'POW!'),'pow');
     }
     if(attacker.isPlayer&&!best.isPlayer){
-      best.grudge=true;                        // he'll remember that
-      best.revengeT=REVENGE_HUNT_T;            // the race can wait — payback first
+      best.grudge=true;                        // they'll remember that
+      best.revengeT=REVENGE_HUNT_T*DIFF.rev;   // the race can wait — payback first
       if(!DEMO) setTimeout(()=>{ if(best.revengeT>0) popup(best.def.name+' WANTS REVENGE!','down'); },700);
     }
     if(best.isPlayer){
@@ -1689,7 +1752,7 @@ function aiThink(r,dt){
     if(player.finished||r.s>FINISH_S-100) r.revengeT=0;  // the line settles all scores
   }
   const hunting=r.revengeT>0;
-  if(hunting&&gap>0) r.rubber=Math.max(r.rubber,0.5);    // blood in the nostrils
+  if(hunting&&gap>0) r.rubber=Math.max(r.rubber,0.5*DIFF.rev); // blood in the nostrils
 
   // corner speed management (vendetta or not, corners still bite)
   const look=16+r.vs*0.9;
@@ -1703,7 +1766,7 @@ function aiThink(r,dt){
     // run the player down — feathering the approach so they don't blow past —
     // then creep into arm's reach; if overshot, stall and wait (grudges are patient)
     if(gap>2.5){
-      const closeV=player.vs+1.5+gap*0.55;
+      const closeV=player.vs+1.5*DIFF.rev+gap*0.55;
       if(r.vs>closeV){ inp.brake=1; inp.pedal=0; }
       else if(gap>3&&!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>BOOST_MIN+2) inp.boost=true;
     }
@@ -1713,7 +1776,7 @@ function aiThink(r,dt){
       // closing rate, never the absolute speed, so a moving player gets run
       // down mid-race and a parked one still isn't overshot (gravity means
       // a waiting hunter rides the brake to hold station)
-      const want=gap>1.2?player.vs+Math.min(2.8,Math.max(0.8,gap*1.1)):player.vs;
+      const want=gap>1.2?player.vs+Math.min(2.8*DIFF.rev,Math.max(0.8,gap*1.1)):player.vs;
       inp.pedal=r.vs<want-0.4?1:0; inp.brake=r.vs>want+0.4?1:0;
     }
     // steer straight onto the player's handlebars
@@ -1802,7 +1865,7 @@ function aiThink(r,dt){
   // punching/kicking (rate-limited, with windup tell)
   if(r.windupT>=0){
     r.windupT+=dt;
-    if(r.windupT>=0.45){
+    if(r.windupT>=(r.windupDur||0.45)){
       r.windupT=-1;
       const t=r.windupTarget;
       if(t&&!t.crashed&&t.invuln<=0&&Math.abs(t.s-r.s)<PUNCH_S&&Math.abs(t.lat-r.lat)<PUNCH_LAT){
@@ -1813,11 +1876,13 @@ function aiThink(r,dt){
     }
   } else if(r.punchCd<=0&&r.grounded){
     if(hunting){
-      // revenge doesn't hesitate — swing the moment they're in reach
+      // revenge doesn't hesitate — swing the moment they're in reach, and the
+      // harder the difficulty the snappier the swing (the tell still plays)
       const dsP=Math.abs(player.s-r.s), dlP=Math.abs(player.lat-r.lat);
       if(dsP<2.0&&dlP<1.3&&Math.abs(player.y-r.y)<PUNCH_DY
          &&!player.crashed&&player.invuln<=0&&!player.finished){
         r.windupT=0; r.windupTarget=player; r.strikeKind=Math.random()<0.5?'kick':'punch';
+        r.windupDur=Math.max(0.26,0.45/DIFF.rev);
         r.strikeSide=Math.sign(player.lat-r.lat)||1;
         AudioSys.tell();
       }
@@ -1830,6 +1895,7 @@ function aiThink(r,dt){
           if(isP&&gameTime-lastAIPunchOnPlayer<2) continue;
           if(Math.random()<r.def.aggr*(isP?(r.grudge?4:2.6):0.45*(1-r.rubber))*DIFF.aggr*dt*2.2){
             r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
+            r.windupDur=0.45;
             r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
             if(isP) AudioSys.tell();   // audible warning when you're the target
             break;
@@ -2719,6 +2785,9 @@ window.GAME={
   get biomeEdges(){ return [COLD_EDGE,WARM_EDGE]; },
   get difficulty(){ return DIFF_ID; },
   get terrainDensity(){ return [TREE_D,ROCK_D]; },
+  get musicTheme(){ const t=(AudioSys.music.on&&AudioSys.theme)||musicThemeFor();
+    return { bpm:t.bpm, bassType:t.bassType, hatHP:t.hatHP, fill:t.fill }; },
+  get lastImpact(){ return AudioSys.lastImpact; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
