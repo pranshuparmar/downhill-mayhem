@@ -88,10 +88,11 @@ the mountain, `↑`/`↓` the difficulty; tap the rows on touch).
 Difficulties: **CHILL** (a pack you can outride cleanly), **MAYHEM** (the game as
 designed — rivals cruise above your clean ceiling; spend boost, tricks, draft or fists),
 and **BRUTAL** (they're 10% faster than your clean ceiling, roll off the gate loaded
-with boost, swing constantly — and their grudges run half again as long and hit half
-again as hard; winnable, barely, and never cleanly). Difficulty also scales the
-revenge machine itself: how long a decked rival hunts you, how fast they run you
-down, and how little warning their swing gives. Personal bests and ghosts are
+with boost, swing constantly — and a BRUTAL grudge does not expire: deck a rival and
+they hunt you for the rest of the race, closing faster than physics ought to allow;
+winnable, barely, and never cleanly). Difficulty also scales the revenge machine
+itself: how long a decked rival hunts you, how fast they run you down, and how
+little warning their swing gives. Personal bests and ghosts are
 tracked **per mountain per difficulty**; everything recorded before difficulties
 existed counts as MAYHEM.
 

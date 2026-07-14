@@ -155,7 +155,7 @@
   #rankStamp .rl { font-size:11px; letter-spacing:1.5px; text-align:center; margin:-3px 0 8px; font-weight:700; }
   #resTitle { font-style:italic; font-size:44px; color:#ffd23f; text-shadow:3px 3px 0 #000; text-align:center; letter-spacing:1px; }
   #resSub { text-align:center; font-size:15px; margin:2px 0 4px; color:#9fd; font-style:italic; }
-  #resRecap { text-align:center; font-size:13px; margin:0 0 4px; color:#cfe3ff; font-style:italic; max-width:440px; }
+  #resRecap { text-align:center; font-size:13px; margin:0 auto 4px; color:#cfe3ff; font-style:italic; max-width:640px; }
   #resStats { text-align:center; font-size:12px; margin:0 0 12px; color:#ffd23f; font-style:italic; letter-spacing:.5px; }
   #resTable { width:100%; border-collapse:collapse; font-size:17px; }
   #resTable td { padding:5px 10px; border-bottom:1px solid rgba(255,255,255,.18); font-style:italic; }
@@ -393,11 +393,12 @@ const TERRAINS={
 // challenge link from before difficulties existed falls back to it)
 const DIFF_ORDER=['chill','mayhem','brutal'];
 // rev scales the whole revenge machine: vendetta length, hunter overspeed,
-// closing rate and windup snap — BRUTAL avengers are genuinely terrifying
+// closing rate and windup snap. At BRUTAL's 3x the vendetta outlives the
+// race — a decked rival simply does not let it go until payback lands.
 const DIFFS={
   chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9,  aggr:0.5, cd:1.4,  meter0:[5,18],  rev:0.8 },
   mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2,  aggr:1,   cd:1,    meter0:[15,35], rev:1 },
-  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.10,  rubP:0.58, rubSat:34, leash:0.03,  corner:5.75, aggr:2.2, cd:0.55, meter0:[40,70], rev:1.6 },
+  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.10,  rubP:0.58, rubSat:34, leash:0.03,  corner:5.75, aggr:2.2, cd:0.55, meter0:[40,70], rev:3 },
 };
 let DIFF_ID='mayhem', DIFF=DIFFS.mayhem;
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
@@ -1752,7 +1753,9 @@ function aiThink(r,dt){
     if(player.finished||r.s>FINISH_S-100) r.revengeT=0;  // the line settles all scores
   }
   const hunting=r.revengeT>0;
-  if(hunting&&gap>0) r.rubber=Math.max(r.rubber,0.5*DIFF.rev); // blood in the nostrils
+  // blood in the nostrils — floor clamped: past 1.0 the corner-grip bonus
+  // turns hunters into physics glitches rather than monsters
+  if(hunting&&gap>0) r.rubber=Math.max(r.rubber,Math.min(0.5*DIFF.rev,1.0));
 
   // corner speed management (vendetta or not, corners still bite)
   const look=16+r.vs*0.9;
@@ -2784,6 +2787,7 @@ window.GAME={
   get youArrowVisible(){ return !!(youArrow&&youArrow.visible); },
   get biomeEdges(){ return [COLD_EDGE,WARM_EDGE]; },
   get difficulty(){ return DIFF_ID; },
+  get diffKnobs(){ return { pace:DIFF.pace, aggr:DIFF.aggr, rev:DIFF.rev }; },
   get terrainDensity(){ return [TREE_D,ROCK_D]; },
   get musicTheme(){ const t=(AudioSys.music.on&&AudioSys.theme)||musicThemeFor();
     return { bpm:t.bpm, bassType:t.bassType, hatHP:t.hatHP, fill:t.fill }; },
