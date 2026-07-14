@@ -300,7 +300,7 @@
     <div id="trickWrap" class="hidden"><div id="trickFill"></div></div>
     <div id="count" class="hidden"></div>
     <div id="muteTag" class="hidden">🔇 MUTED</div>
-    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; ↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute &nbsp;·&nbsp; G ghost &nbsp;·&nbsp; ESC title</div>
+    <div id="hint">Z X C tricks in air &nbsp;·&nbsp; S/↓ backflip &nbsp;·&nbsp; SHIFT boost &nbsp;·&nbsp; E punch &nbsp;·&nbsp; F kick &nbsp;·&nbsp; R restart &nbsp;·&nbsp; M mute &nbsp;·&nbsp; G ghost &nbsp;·&nbsp; H help &nbsp;·&nbsp; ESC title</div>
   </div>
 
   <div id="title">
@@ -317,7 +317,7 @@
       <span><b>S / ↓ in air</b></span><span>Backflip</span>
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
       <span><b>E / F</b></span><span>Punch / Kick — both work mid-air; hits pay boost, extra airborne or boosting</span>
-      <span><b>R · M · T · G · ESC</b></span><span>Restart · Mute · CRT · Ghost · Back to title (Daily lives there)</span>
+      <span><b>R · M · T · G · H · ESC</b></span><span>Restart · Mute · CRT · Ghost · Help line · Back to title</span>
       <span><b>🎮 PAD</b></span><span>Stick steer · R2 pedal · L2 brake/flip · R1 boost · ✕ start/hop · □/○ punch/kick · L1 △ R3 tricks</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
@@ -367,7 +367,7 @@
       <div id="resStats"></div>
       <table id="resTable"></table>
       <div id="resBtns">
-        <button id="chalBtn">📋 CHALLENGE A FRIEND</button>
+        <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
         <button id="shareBtn">📸 SHARE</button>
         <button id="homeBtn">⌂ HOME</button>
       </div>
@@ -860,6 +860,7 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='KeyG'){ ghostShow=!ghostShow; paintGhostBtn(); }
   else if(e.code==='KeyM') AudioSys.toggleMute();
   else if(e.code==='KeyT') toggleCRT();
+  else if(e.code==='KeyH') toggleHint();
 });
 function toggleCRT(){
   const off=document.getElementById('crt').classList.toggle('off');
@@ -2550,6 +2551,12 @@ function initHud(){
   }
 }
 let lastPosTxt='',lastTimeTxt='',lastSpdTxt='';
+// the control-hint line fades out ~9 s into a race so it stays out of the way;
+// 'H' brings it back (or hides it) any time, and touching it disables the
+// auto-fade so a summoned hint stays put. Reset each race at the countdown.
+let hintShow=true, hintUserToggled=false;
+function applyHint(){ if(hudEls.hint) hudEls.hint.style.opacity=hintShow?'1':'0'; }
+function toggleHint(){ if(DEMO) return; hintShow=!hintShow; hintUserToggled=true; applyHint(); }
 function updateHud(){
   const spd=Math.round(player.vs*3.6);
   if(String(spd)!==lastSpdTxt){ lastSpdTxt=String(spd); hudEls.speedNum.textContent=spd; }
@@ -2593,8 +2600,9 @@ function updateHud(){
     fill.style.width=(clamp(player.trickT/def.dur,0,1)*100).toFixed(0)+'%';
     fill.classList.toggle('safe',player.trickT>=def.dur*trickForgive(player.trick));
   } else tw.classList.add('hidden');
-  if(state==='racing'&&raceTime>9&&hudEls.hint.style.opacity!=='0') hudEls.hint.style.opacity='0';
-  if(state==='countdown') hudEls.hint.style.opacity='1';
+  // auto-fade once after 9 s, unless the player has taken manual control via H
+  if(state==='racing'&&raceTime>9&&!hintUserToggled&&hintShow){ hintShow=false; applyHint(); }
+  if(state==='countdown'&&(!hintShow||hintUserToggled)){ hintShow=true; hintUserToggled=false; applyHint(); }
   if(IS_TOUCH) touchUIEl.classList.toggle('hidden',
     DEMO||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt));
 }

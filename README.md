@@ -51,6 +51,7 @@ no build step, no npm, no server, no network.
 | `M` | Mute audio (music and all) |
 | `T` | Toggle the CRT scanline/vignette filter |
 | `G` | Toggle the ghost of your best run |
+| `H` | Show/hide the control-hint line (it auto-fades a few seconds into each race) |
 | `Esc` / `Backspace` | Back to the title screen — pick your mountain (`←`/`→`) and difficulty (`↑`/`↓`) there (the results screen has a ⌂ button too). In fullscreen use `Backspace` or ⌂: browsers reserve `Esc` for exiting fullscreen |
 | `⛶` (top-right) | Fullscreen on/off — on desktop and mobile alike |
 | 🎮 Controller | DualShock/Xbox or any standard pad: stick steer · R2 pedal · L2 brake (backflip in air) · R1 boost · ✕ start/hop · □ punch · ○ kick · L1/△/R3 tricks |
