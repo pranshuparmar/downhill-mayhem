@@ -26,9 +26,10 @@ that charge a boost meter and fists (and boots) that settle position disputes.
 
 📱 On phones and tablets, touch controls appear automatically: steer and brake with the
 left thumb; jump, tricks, punch/kick and boost with the right. Pedalling is automatic,
-boost is tap-to-toggle, and the game asks you to rotate to landscape (or hit the big
-⛶ button on that screen — fullscreen auto-rotates). The top button row covers the CRT
-filter (📺), PB ghost (👻), mute, restart, home and fullscreen. 🎮 Controllers work
+boost is tap-to-toggle, and the game asks you to rotate to landscape (or just tap that
+screen to go fullscreen — it auto-rotates). The top button row covers the CRT
+filter (📺), PB ghost (👻), mute, restart, home and fullscreen. Switch away mid-race and
+the game pauses; tap to drop back in. 🎮 Controllers work
 too — plug in a DualShock/Xbox pad and press ✕.
 
 The whole game is a single self-contained `index.html` — three.js included inside it —
@@ -50,7 +51,7 @@ no build step, no npm, no server, no network.
 | `M` | Mute audio (music and all) |
 | `T` | Toggle the CRT scanline/vignette filter |
 | `G` | Toggle the ghost of your best run |
-| `Esc` / `Backspace` | Back to the title screen — switch between Classic and the Daily there (the results screen has a ⌂ button too). In fullscreen use `Backspace` or ⌂: browsers reserve `Esc` for exiting fullscreen |
+| `Esc` / `Backspace` | Back to the title screen — pick your mountain (`←`/`→`) and difficulty (`↑`/`↓`) there (the results screen has a ⌂ button too). In fullscreen use `Backspace` or ⌂: browsers reserve `Esc` for exiting fullscreen |
 | `⛶` (top-right) | Fullscreen on/off — on desktop and mobile alike |
 | 🎮 Controller | DualShock/Xbox or any standard pad: stick steer · R2 pedal · L2 brake (backflip in air) · R1 boost · ✕ start/hop · □ punch · ○ kick · L1/△/R3 tricks |
 
@@ -155,9 +156,10 @@ knocked you down and honour is settled. Then they go back to racing.
   (MIT, see [THREE.LICENSE](THREE.LICENSE)), inlined directly. The file works from
   `file://`, from any static host, and keeps working even if every CDN on Earth
   disappears.
-- Seeded procedural course (~2.3 km, ~16% average grade) — the same mountain every run:
-  sweeping turns, steep chutes, step-down drops, wooden kickers, and a broad rolling
-  hillside around the racing line.
+- Seeded procedural courses (~2.3 km, ~16% average grade) — three hand-tuned mountains
+  plus a fresh date-seeded Daily, each deterministic so everyone rides the same hill:
+  sweeping turns, steep chutes, step-down drops, wooden kickers, rock gardens, and a
+  broad rolling hillside around the racing line.
 - Riders simulate in track space (distance-along-course, lateral offset, height) and are
   converted to world space for rendering; terrain, physics and scenery all share one
   analytic ground function.

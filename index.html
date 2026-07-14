@@ -673,7 +673,14 @@ const AudioSys={
     try{
       const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
       const ctx=new AC(); this.ctx=ctx;
-      this.master=ctx.createGain(); this.master.gain.value=this.muted?0:0.8; this.master.connect(ctx.destination);
+      this.master=ctx.createGain(); this.master.gain.value=this.muted?0:0.8;
+      // a peak limiter on the bus (threshold ~-1 dB, near-brickwall) lets the
+      // music sit LOUD without the skid/boost/music stack clipping on the rare
+      // transient coincidence — sustained levels pass through untouched
+      const lim=ctx.createDynamicsCompressor();
+      lim.threshold.value=-1; lim.knee.value=0; lim.ratio.value=20;
+      lim.attack.value=0.003; lim.release.value=0.1;
+      this.limiter=lim; this.master.connect(lim); lim.connect(ctx.destination);
       const len=ctx.sampleRate*1.5, buf=ctx.createBuffer(1,len,ctx.sampleRate), d=buf.getChannelData(0);
       for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
       this.noiseBuf=buf;
@@ -684,9 +691,10 @@ const AudioSys={
       const w=mk('lowpass',600); this.wind=w.g; this.windF=w.f;
       const dd=mk('lowpass',240); this.dirt=dd.g; this.dirtF=dd.f;
       const bb=mk('bandpass',1400); this.boost=bb.g;
-      // the music is the lead, not a bed under the SFX — sits well above wind,
-      // skid and boost rather than ducking them down to hear it
-      this.musicGain=ctx.createGain(); this.musicGain.gain.value=0.62; this.musicGain.connect(this.master);
+      // the music is the LEAD, not a bed under the SFX — sits well above wind,
+      // skid and boost rather than ducking them down to hear it (the bus
+      // limiter above keeps this from clipping)
+      this.musicGain=ctx.createGain(); this.musicGain.gain.value=1.0; this.musicGain.connect(this.master);
       this.started=true;
       if(ctx.state==='suspended') ctx.resume().catch(()=>{});
     }catch(e){ /* audio is optional */ }
@@ -2922,6 +2930,7 @@ window.GAME={
   get ghostSamples(){ return ghostData?Math.floor(ghostData.length/3):0; },
   get ghostShow(){ return ghostShow; },
   get musicVol(){ return AudioSys.musicGain?AudioSys.musicGain.gain.value:0; },
+  get audioLimiter(){ return AudioSys.limiter?{on:true,threshold:AudioSys.limiter.threshold.value,reduction:AudioSys.limiter.reduction}:{on:false}; },
   get sunHex(){ return SUN.color.getHex(); },
   get challenge(){ return CHAL; }, get lastChallengeLink(){ return lastChallengeLink; },
   get shareData(){ return SHARE_DATA; },
