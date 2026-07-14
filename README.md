@@ -70,10 +70,13 @@ off the gate with boost already banked, burn it in visible surges to close any g
 hound a clean leader all the way down, and empty the tank over the final stretch —
 no lead is safe. Fall off the back and a couple of backmarkers will dawdle within
 sight to keep the race alive — but the leaders never wait, and if you're crash-looping
-they'll all leave you to the mountain. Riders get fresh jersey colours every race.
+they'll all leave you to the mountain. Every race deals five rivals from a
+twenty-strong roster with fresh names and jersey colours, so the field never feels
+like the same faces twice.
 
 **Four mountains, three difficulties:** pick both on the title screen (`←`/`→` cycles
-the mountain, `↑`/`↓` the difficulty; tap the rows on touch).
+the mountain, `↑`/`↓` the difficulty; tap the rows on touch) — each flick clunks like a
+cassette-deck button.
 
 - **CLASSIC** — the canonical course: alpine frost into warm canyon, the all-rounder.
 - **TIMBERLINE** — dense forest, tight rhythm, slalom tree weaves everywhere.
@@ -112,8 +115,10 @@ countdown after the first race, and `Esc` returns to the title screen.
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
 screen — it copies a link that carries the exact mountain, your time **and the
 difficulty you set it on**. Anyone opening it starts the game on that same mountain and
-difficulty, sees your time as a HUD target, and gets a BEATEN/missed verdict at the
-line. Switch mountain or difficulty and the challenge politely waits (the title says
+difficulty, sees your time as a HUD target, and gets an unmissable **CHALLENGE BEATEN**
+(green) or **CHALLENGE MISSED** (red) badge on the results screen — which, like the
+result card, always names the mountain and difficulty you raced. Switch mountain or
+difficulty and the challenge politely waits (the title says
 so) until you switch back — never blocked, just not competing. Old links from before
 difficulties existed count as MAYHEM. The whole challenge lives in the link; there is
 no server and no account.

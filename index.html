@@ -98,7 +98,10 @@
 
   /* ---- Title screen ---- */
   #title { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; color:#fff; background:linear-gradient(180deg, rgba(8,12,20,.30), rgba(8,12,20,.62)); text-align:center; }
+    justify-content:center; color:#fff; background:linear-gradient(180deg, rgba(8,12,20,.30), rgba(8,12,20,.62)); text-align:center;
+    /* the #foot is absolute at the bottom; reserve room so tall menu content
+       (selectors + controls) never centres down onto it on short screens */
+    padding:8px 0 58px; box-sizing:border-box; }
   #logo { font-style:italic; line-height:.82; letter-spacing:-2px; transform:skewX(-8deg) rotate(-2deg); }
   #logo .l1 { font-size:min(11vw,92px); color:#fff;
     text-shadow:3px 3px 0 #143, 6px 6px 0 rgba(0,0,0,.9); }
@@ -116,13 +119,14 @@
   #ghLink:hover { text-decoration:underline; }
   #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
   #target { position:absolute; top:70px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:15px; color:#59ff7a; }
-  #chalBtn, #homeBtn, #shareBtn { display:block; margin:14px auto 0; padding:8px 14px; font-family:inherit; font-style:italic; font-weight:900;
+  #resBtns { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:16px; }
+  #chalBtn, #homeBtn, #shareBtn { padding:9px 16px; font-family:inherit; font-style:italic; font-weight:900;
     font-size:14px; color:#fff; background:rgba(255,140,0,.35); border:2px solid #fff; box-shadow:3px 3px 0 rgba(0,0,0,.7);
-    cursor:pointer; letter-spacing:.5px; }
+    cursor:pointer; letter-spacing:.5px; white-space:nowrap; }
   #chalBtn:hover { background:rgba(255,140,0,.6); }
-  #shareBtn { margin-top:8px; background:rgba(90,220,130,.28); }
+  #shareBtn { background:rgba(90,220,130,.28); }
   #shareBtn:hover { background:rgba(90,220,130,.5); }
-  #homeBtn { margin-top:8px; background:rgba(80,140,255,.30); }
+  #homeBtn { background:rgba(80,140,255,.30); }
   #homeBtn:hover { background:rgba(80,140,255,.55); }
   #resFoot { text-align:center; margin-top:10px; font-size:11px; font-style:italic; }
   #resFoot a { color:#8fb8ff; text-decoration:none; }
@@ -154,6 +158,15 @@
   #rankStamp .rg { line-height:1.05; text-align:center; }
   #rankStamp .rl { font-size:11px; letter-spacing:1.5px; text-align:center; margin:-3px 0 8px; font-weight:700; }
   #resTitle { font-style:italic; font-size:44px; color:#ffd23f; text-shadow:3px 3px 0 #000; text-align:center; letter-spacing:1px; }
+  #resMode { text-align:center; font-size:14px; margin:1px 0 2px; color:#ffd23f; font-style:italic;
+    font-weight:900; letter-spacing:2px; text-shadow:2px 2px 0 #000; }
+  body.touch #resMode { font-size:11px; }
+  #resChal { text-align:center; margin:8px auto 4px; padding:6px 16px; width:fit-content; max-width:92%;
+    font-style:italic; font-weight:900; font-size:20px; letter-spacing:1px; border:3px solid currentColor;
+    border-radius:6px; text-shadow:2px 2px 0 rgba(0,0,0,.8); box-shadow:3px 3px 0 rgba(0,0,0,.5); }
+  #resChal.win { color:#59ff7a; background:rgba(40,180,90,.16); }
+  #resChal.lose { color:#ff7a6f; background:rgba(200,60,50,.16); }
+  body.touch #resChal { font-size:15px; padding:4px 12px; border-width:2px; }
   #resSub { text-align:center; font-size:15px; margin:2px 0 4px; color:#9fd; font-style:italic; }
   #resRecap { text-align:center; font-size:13px; margin:0 auto 4px; color:#cfe3ff; font-style:italic; max-width:640px; }
   #resStats { text-align:center; font-size:12px; margin:0 0 12px; color:#ffd23f; font-style:italic; letter-spacing:.5px; }
@@ -206,9 +219,9 @@
   #tHome { top:calc(12px + env(safe-area-inset-top)); right:calc(64px + env(safe-area-inset-right)); }
   #tFull { top:calc(12px + env(safe-area-inset-top)); right:calc(12px + env(safe-area-inset-right)); }
 
-  #rotate { position:absolute; inset:0; z-index:7; display:none; flex-direction:column; gap:8px;
-    align-items:center; justify-content:center; text-align:center; background:rgba(8,12,18,.88);
-    color:#ffd23f; font-style:italic; font-size:26px; pointer-events:none; text-shadow:3px 3px 0 #000; }
+  #rotate { position:absolute; inset:0; z-index:9; display:none; flex-direction:column; gap:8px;
+    align-items:center; justify-content:center; text-align:center; background:rgba(8,12,18,.94);
+    color:#ffd23f; font-style:italic; font-size:26px; pointer-events:auto; cursor:pointer; text-shadow:3px 3px 0 #000; }
   #rotFull { margin-top:18px; padding:13px 22px; border:3px solid #ffd23f; background:rgba(0,0,0,.55);
     color:#ffd23f; font-size:19px; font-weight:900; pointer-events:auto; cursor:pointer;
     box-shadow:4px 4px 0 rgba(0,0,0,.6); }
@@ -229,7 +242,8 @@
   body.touch #resStats { font-size:9px; margin:0 0 6px; }
   body.touch #resTable { font-size:12px; }
   body.touch #resTable td { padding:2px 6px; }
-  body.touch #chalBtn, body.touch #homeBtn, body.touch #shareBtn { padding:5px 10px; font-size:11px; margin-top:6px; }
+  body.touch #resBtns { gap:6px; margin-top:8px; }
+  body.touch #chalBtn, body.touch #homeBtn, body.touch #shareBtn { padding:5px 10px; font-size:11px; }
   body.touch #resAgain { font-size:10px; }
   body.touch #resFoot { font-size:9px; margin-top:6px; }
   body.touch #gap { top:66px; left:18px; font-size:13px; }
@@ -250,6 +264,16 @@
     #logo .l1 { font-size:min(11vw,64px); } #logo .l2 { font-size:min(14vw,84px); }
     #tag { font-size:12px; padding:0 14px; } #pressEnter { font-size:20px; }
     #foot { font-size:9px; }
+  }
+  /* short viewports (wide-but-shallow desktop windows): compress the title
+     stack so the controls table + selectors never reach the footer */
+  @media (max-height:840px){
+    #logo .l1 { font-size:min(9vw,62px); } #logo .l2 { font-size:min(11vw,80px); }
+    #tag { margin-top:8px; } #bestLine { margin-top:5px; font-size:15px; }
+    #chalLine { font-size:14px; }
+    #controls { margin-top:12px; gap:2px 18px; padding:9px 20px; font-size:13px; }
+    #pressEnter { margin-top:14px; font-size:22px; }
+    .selRow { margin-top:5px; }
   }
 </style>
 </head>
@@ -286,11 +310,11 @@
     <div id="chalLine"></div>
     <div id="controls">
       <span><b>W / ↑</b></span><span>Pedal</span>
-      <span><b>S / ↓</b></span><span>Brake</span>
+      <span><b>S / ↓</b></span><span>Brake — or Backflip while airborne</span>
       <span><b>A D / ← →</b></span><span>Steer</span>
       <span><b>SPACE</b></span><span>Bunny hop (hop off a ramp lip for extra air)</span>
       <span><b>Z X C</b></span><span>Tricks — airborne only, land after the bar fills</span>
-      <span><b>↓ / S in air</b></span><span>Backflip</span>
+      <span><b>S / ↓ in air</b></span><span>Backflip</span>
       <span><b>SHIFT</b></span><span>Boost (drains meter — tricks, hits &amp; clean riding fill it)</span>
       <span><b>E / F</b></span><span>Punch / Kick — both work mid-air; hits pay boost, extra airborne or boosting</span>
       <span><b>R · M · T · G · ESC</b></span><span>Restart · Mute · CRT · Ghost · Back to title (Daily lives there)</span>
@@ -336,13 +360,17 @@
     <div id="resPanel">
       <div id="rankStamp"></div>
       <div id="resTitle">RESULTS</div>
+      <div id="resMode"></div>
+      <div id="resChal" class="hidden"></div>
       <div id="resSub"></div>
       <div id="resRecap"></div>
       <div id="resStats"></div>
       <table id="resTable"></table>
-      <button id="chalBtn">📋 CHALLENGE A FRIEND — SEND THIS RUN</button>
-      <button id="shareBtn">📸 SHARE RESULT CARD</button>
-      <button id="homeBtn">⌂ TITLE SCREEN — CLASSIC / DAILY MOUNTAIN</button>
+      <div id="resBtns">
+        <button id="chalBtn">📋 CHALLENGE A FRIEND</button>
+        <button id="shareBtn">📸 SHARE</button>
+        <button id="homeBtn">⌂ HOME</button>
+      </div>
       <div id="resAgain">R — RACE AGAIN &nbsp;·&nbsp; ESC / ⌫ — TITLE SCREEN &nbsp;<span style="opacity:.65">(⌫ keeps fullscreen)</span></div>
       <div id="resFoot"><a href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a></div>
     </div>
@@ -648,7 +676,9 @@ const AudioSys={
       const w=mk('lowpass',600); this.wind=w.g; this.windF=w.f;
       const dd=mk('lowpass',240); this.dirt=dd.g; this.dirtF=dd.f;
       const bb=mk('bandpass',1400); this.boost=bb.g;
-      this.musicGain=ctx.createGain(); this.musicGain.gain.value=0.39; this.musicGain.connect(this.master);
+      // the music is the lead, not a bed under the SFX — sits well above wind,
+      // skid and boost rather than ducking them down to hear it
+      this.musicGain=ctx.createGain(); this.musicGain.gain.value=0.62; this.musicGain.connect(this.master);
       this.started=true;
       if(ctx.state==='suspended') ctx.resume().catch(()=>{});
     }catch(e){ /* audio is optional */ }
@@ -679,6 +709,13 @@ const AudioSys={
   },
   whoosh(){ this.noiseHit(1300,0.13,0.3); },
   tell(){ this.noiseHit(340,0.16,0.22); this.blip(180,0.12,0.12,'sawtooth'); },
+  // cassette-deck clunk for cycling the menu selectors: a mechanical noise
+  // tick + a short square click, pitched up going forward, down going back
+  uiTicks:0,
+  uiTick(fwd){ this.ensure(); this.uiTicks++;
+    this.noiseHit(fwd?1400:900,0.03,0.34);
+    this.blip(fwd?720:520,0.05,0.16,'square');
+    this.thump(fwd?150:120,0.06,0.18); },
   // every impact has its own voice: punch = fleshy smack, kick = deep boot,
   // tree = hollow wooden knock + canopy rustle, rock = hard stony crack,
   // and crashSnd stays the plain body-tumble for falls/walls/bails
@@ -836,8 +873,12 @@ document.addEventListener('visibilitychange',()=>{
     if(!DEMO&&(state==='racing'||state==='countdown')&&player&&!player.finished) setPaused(true);
   } else if(!PAUSED&&AudioSys.ctx) AudioSys.ctx.resume().catch(()=>{});
 });
-// any tap resumes — capture phase, so taps landing on HUD buttons count too
-window.addEventListener('pointerdown',()=>{ if(PAUSED) setPaused(false); },{capture:true});
+// on touch in portrait the ROTATE overlay owns the screen (it sits above the
+// pause overlay); a tap there means "get me to landscape", not "resume"
+function inPortrait(){ return IS_TOUCH&&window.matchMedia&&window.matchMedia('(orientation:portrait)').matches; }
+// any tap resumes — capture phase, so taps landing on HUD buttons count too —
+// EXCEPT while the rotate overlay is up, so you can't resume into portrait
+window.addEventListener('pointerdown',()=>{ if(PAUSED&&!inPortrait()) setPaused(false); },{capture:true});
 
 // ---- gamepad (DualShock 4 or any standard-mapping pad) ----
 // polled once per frame; hold-actions write into `keys` on edges only so the
@@ -922,10 +963,13 @@ function initTouch(){
   const tCrtEl=document.getElementById('tCRT');
   tCrtEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure(); toggleCRT(); });
   tCrtEl.addEventListener('contextmenu',e=>e.preventDefault());
-  // the portrait overlay's big way out: fullscreen locks landscape by itself
-  const rotFullEl=document.getElementById('rotFull');
-  rotFullEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation();
-    AudioSys.ensure(); enterFullscreen(); });
+  // the portrait overlay's big way out: fullscreen locks landscape by itself.
+  // enterFullscreen() goes FIRST — AudioContext.resume() consumes the tap's
+  // user-activation on some browsers, which was eating the fullscreen request
+  // and forcing a second tap. The whole overlay is tappable, not just the pill.
+  const rotFs=e=>{ e.preventDefault(); e.stopPropagation(); enterFullscreen(); AudioSys.ensure(); };
+  document.getElementById('rotFull').addEventListener('pointerdown',rotFs);
+  document.getElementById('rotate').addEventListener('pointerdown',rotFs);
   // ghost visibility is a latch like boost, not a momentary press
   const tGhostEl=document.getElementById('tGhost');
   tGhostEl.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); AudioSys.ensure();
@@ -942,20 +986,25 @@ function initTouch(){
     keys.boost=!keys.boost; tBoostEl.classList.toggle('on',keys.boost); });
   tBoostEl.addEventListener('contextmenu',e=>e.preventDefault());
   // tap anywhere: start from title / race again from results — and use that same
-  // gesture to (re)enter fullscreen, since browsers only honour it inside one
-  window.addEventListener('pointerdown',()=>{ AudioSys.ensure();
+  // gesture to (re)enter fullscreen, since browsers only honour it inside one.
+  // Fullscreen BEFORE ensure() — audio resume can eat the tap's activation.
+  window.addEventListener('pointerdown',()=>{
     if(DEMO||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt+1.6)){
-      pressQueue.enter=true;
       if(DEMO) enterFullscreen();
+      pressQueue.enter=true;
     }
+    AudioSys.ensure();
   });
 }
 function enterFullscreen(){
   try{
-    if(document.fullscreenElement||!document.documentElement.requestFullscreen) return;
-    document.documentElement.requestFullscreen()
-      .then(()=>{ try{ screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{}); }catch(_){} })
-      .catch(()=>{});
+    if(document.fullscreenElement||document.webkitFullscreenElement) return;
+    const el=document.documentElement;
+    const req=el.requestFullscreen||el.webkitRequestFullscreen||el.webkitRequestFullScreen;
+    if(!req) return;
+    const p=req.call(el);
+    const lock=()=>{ try{ screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{}); }catch(_){} };
+    if(p&&p.then) p.then(lock).catch(()=>{}); else lock();
   }catch(_){}
 }
 function clearTouchBoost(){
@@ -1310,6 +1359,10 @@ function buildMerged(parts){
   return g;
 }
 const JERSEY_POOL=[0xe0392b,0xff7f27,0xf2c515,0x7ac324,0x18a85c,0x1fb3c4,0x2f66d0,0x8a4fd8,0xe259b5,0xf2f2f2];
+// 20 riders in the roster; a race shuffle-picks 5, so the field never feels
+// like the same five faces every run. Kept short for the HUD gap readout.
+const RIVAL_NAMES=['BLAZE','RHONDA','DIESEL','KAZU','SIERRA','NITRO','AXEL','RAVEN',
+  'BOLT','VIPER','TANK','ROCCO','JETT','LUNA','FANG','DUSTY','CINDER','ZANE','GRIT','TREAD'];
 function recolorRider(r,hex){
   r.color=hex;
   const c=new THREE.Color(hex), f=c.clone().multiplyScalar(0.5);
@@ -2063,9 +2116,11 @@ function dailyEntrySeed(){ return CHAL&&CHAL.terrain==='daily'?CHAL.seed:dailySe
 function cycleMountain(dir){
   const i=TERRAIN_ORDER.indexOf(MODE);
   const next=TERRAIN_ORDER[(i+dir+TERRAIN_ORDER.length)%TERRAIN_ORDER.length];
+  AudioSys.uiTick(dir>0);
   setMode(next, next==='daily'?dailyEntrySeed():undefined);
 }
 function cycleDiff(dir){
+  AudioSys.uiTick(dir>0);
   const i=DIFF_ORDER.indexOf(DIFF_ID);
   setDiff(DIFF_ORDER[(i+dir+DIFF_ORDER.length)%DIFF_ORDER.length]);
 }
@@ -2075,6 +2130,11 @@ function resetRiders(){
   for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
   riders.forEach((r,i)=>{ recolorRider(r,pool[i]);
     if(hudEls.dots) hudEls.dots[i].style.background='#'+r.color.toString(16).padStart(6,'0'); });
+  // ...and fresh names: shuffle the 20-name roster, deal 5 to the rivals
+  const names=RIVAL_NAMES.slice();
+  for(let i=names.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=names[i]; names[i]=names[j]; names[j]=t; }
+  let ni=0;
+  for(const r of riders) if(!r.isPlayer) r.def.name=names[ni++];
   for(const r of riders){
     r.s=0; r.lat=START_LATS[r.idx]; r.y=groundHeight(r.s,r.lat);
     r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0; r.wallT=0;
@@ -2255,23 +2315,33 @@ function showResults(){
       '<td>'+(r.finished?fmtTime(r.finishTime):'—')+'</td><td>'+gap+'</td></tr>';
   });
   document.getElementById('resTable').innerHTML=html;
+  // which mountain + difficulty this run was — always shown, so a screenshot
+  // or a glance tells you exactly what was raced
+  document.getElementById('resMode').textContent=
+    terrLabel(MODE)+(MODE==='daily'?' · '+seedLabel(CUR_SEED):'')+'  ·  '+DIFF.label;
   const place=player.racePos;
   let sub='You finished '+ordinal(place)+' — '+fmtTime(player.finishTime);
   if(player.finished) sub+=player.newPB?' · NEW BEST!':(BEST.time?' · best '+fmtTime(BEST.time):'');
-  if(player.finished&&player.chalDiff!=null)
-    sub+=player.chalDiff<0?' · CHALLENGE BEATEN':' · challenge +'+player.chalDiff.toFixed(2)+'s';
   document.getElementById('resSub').textContent=sub;
+  // a challenge race gets its own unmissable verdict badge, distinct from a
+  // normal race — beat the target or miss it, by how much
+  const chalEl=document.getElementById('resChal');
+  if(player.finished&&player.chalDiff!=null){
+    const won=player.chalDiff<0;
+    chalEl.className=won?'win':'lose';
+    chalEl.textContent=won?('⚑ CHALLENGE BEATEN by '+(-player.chalDiff).toFixed(2)+'s ✓')
+                          :('⚑ CHALLENGE MISSED by +'+player.chalDiff.toFixed(2)+'s ✗');
+  } else chalEl.className='hidden';
   document.getElementById('resRecap').textContent=raceRecap(order,place);
   // on touch the race-again tap arms after a beat — show it arming
   if(IS_TOUCH){ const ra=document.getElementById('resAgain');
     ra.style.opacity='0.25'; ra.textContent='…';
     setTimeout(()=>{ ra.style.opacity=''; ra.textContent='TAP — RACE AGAIN'; },1700); }
-  document.getElementById('chalBtn').style.display=player.finished?'block':'none';
-  document.getElementById('shareBtn').style.display=player.finished?'block':'none';
+  document.getElementById('chalBtn').style.display=player.finished?'':'none';
+  document.getElementById('shareBtn').style.display=player.finished?'':'none';
   SHARE_DATA=player.finished?{ place, time:player.finishTime, rank:player.rank||null,
     recap:raceRecap(order,place), newPB:!!player.newPB,
-    mode:terrLabel(MODE)+(MODE==='daily'?' · '+seedLabel(CUR_SEED):'')
-      +(DIFF_ID!=='mayhem'?' · '+DIFF.label:''),
+    mode:terrLabel(MODE)+(MODE==='daily'?' · '+seedLabel(CUR_SEED):'')+' · '+DIFF.label,
     // the card always carries the PUBLIC challenge url — a screenshot of a
     // local run should still hand strangers a working race-me link
     chal:'pranshuparmar.github.io/downhill-mayhem/?c='+chalCode(player.finishTime) }:null;
@@ -2349,7 +2419,9 @@ function buildResultCard(){
   g.font=font(64); g.fillStyle='rgba(0,0,0,.85)';
   const placeLine=ordinal(S.place).toUpperCase()+' — '+fmtTime(S.time);
   g.fillText(placeLine,cx+5,795); g.fillStyle='#fff'; g.fillText(placeLine,cx,790);
-  g.font=font(27,700); g.fillStyle='#9fd'; g.fillText(S.mode,cx,836);
+  let mpx=27; g.font=font(mpx,700);
+  while(g.measureText(S.mode).width>1000&&mpx>18){ mpx--; g.font=font(mpx,700); }
+  g.fillStyle='#9fd'; g.fillText(S.mode,cx,836);
   if(S.newPB){ g.font=font(36,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,892); }
   // the challenge: the whole point of the card (shrink until daily links fit)
   const raceLine='RACE MY TIME → '+S.chal;
@@ -2840,6 +2912,8 @@ window.GAME={
   get difficulty(){ return DIFF_ID; },
   get diffKnobs(){ return { pace:DIFF.pace, aggr:DIFF.aggr, rev:DIFF.rev, company:DIFF.company }; },
   get paused(){ return PAUSED; },
+  get uiTicks(){ return AudioSys.uiTicks; },
+  get rivalNamePool(){ return RIVAL_NAMES.slice(); },
   get terrainDensity(){ return [TREE_D,ROCK_D]; },
   get musicTheme(){ const t=(AudioSys.music.on&&AudioSys.theme)||musicThemeFor();
     return { bpm:t.bpm, bassType:t.bassType, hatHP:t.hatHP, fill:t.fill }; },
@@ -2864,6 +2938,8 @@ window.GAME={
     nearestRockAfter(s){ for(let b=Math.floor(s/10);b<Math.floor((S_MAX)/10);b++){
       const l=colRockBuckets.get(b); if(l) for(const t of l) if(t.s>s) return {s:t.s,lat:t.lat,r:t.r}; } return null; },
     resultCardURL(){ return SHARE_DATA?buildResultCard().toDataURL('image/png'):null; },
+    rerenderResults(){ showResults(); },   // re-paint results after staging state
+    riderNames(){ return riders.filter(r=>!r.isPlayer).map(r=>r.def.name); },
     fastForward(seconds){ FAST=true; const dt=1/60, n=Math.round(seconds/dt);
       for(let i=0;i<n;i++){ if(this.autopilotOn&&!player.finished){ aiThink(player,dt); player.inp.boost=false; }
         updateRace(dt); if(state==='finished'&&riders.every(r=>r.finished)) break; }
