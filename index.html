@@ -437,10 +437,13 @@ const DIFF_ORDER=['chill','mayhem','brutal'];
 // race — a decked rival simply does not let it go until payback lands.
 // company: whether backmarkers keep a struggling player in sight — BRUTAL
 // shows no such mercy, fall off the back and you're alone with the mountain.
+// huntRace: a decked BRUTAL rival keeps RACING while it hunts (never parks to
+// wait), so knocking rivals down no longer thins the field — they punish you
+// AND stay in the race. On CHILL/MAYHEM the grudge still parks for payback.
 const DIFFS={
   chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9,  aggr:0.5, cd:1.4, meter0:[5,18],  rev:0.8, company:true },
   mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2,  aggr:1,   cd:1,   meter0:[15,35], rev:1,   company:true },
-  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.12,  rubP:0.60, rubSat:32, leash:0.02,  corner:5.85, aggr:2.5, cd:0.5, meter0:[45,80], rev:3,   company:false },
+  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.145, rubP:0.62, rubSat:30, leash:0.02,  corner:5.95, aggr:2.9, cd:0.45,meter0:[50,85], rev:3,   company:false, huntRace:true },
 };
 let DIFF_ID='mayhem', DIFF=DIFFS.mayhem;
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
@@ -502,11 +505,16 @@ const TRICK_GRACE=0.22, BIGAIR_T=1.15, BIGAIR_METER=8;
 const TRICKS={
   nohander:{ dur:0.55, meter:14, name:'NO HANDER' },
   superman:{ dur:0.85, meter:24, name:'SUPERMAN' },
-  backflip:{ dur:0.95, meter:30, name:'BACKFLIP' },
+  // the backflip is a full 360° rotation, not a pose — landing it half-done
+  // means landing on your head, so it gets a far stricter clean/save band
+  // than the pose tricks (which just pull an unfinished pose back in)
+  backflip:{ dur:0.95, meter:30, name:'BACKFLIP', forgive:0.90, save:0.85 },
   heel:    { dur:1.15, meter:38, name:'HEEL CLICKER' },
 };
-const TRICK_FORGIVE=0.78;   // trick this far done counts as landed clean
+const TRICK_FORGIVE=0.78;   // pose trick this far done counts as landed clean
 const TRICK_SAVE=0.6;       // this far done: caught it — no payout, but upright
+function trickForgive(t){ return TRICKS[t].forgive||TRICK_FORGIVE; }
+function trickSave(t){ return TRICKS[t].save||TRICK_SAVE; }
 const RIDER_DEFS=[ // slot 0 = player
   { name:'YOU',    color:0xff7f27, skin:0xd9a066, top:1.00, corner:1.00, aggr:0,    trick:0,    crashy:0 },
   { name:'BLAZE',  color:0xe0392b, skin:0x8a5a33, top:1.03, corner:0.94, aggr:0.85, trick:0.45, crashy:0.35 },
@@ -1534,9 +1542,9 @@ function handleLanding(r,impact){
   let landGrade=null;
   if(r.trick){
     const done=r.trickT/TRICKS[r.trick].dur;
-    if(done>=TRICK_FORGIVE){ completeTrick(r); // close enough
+    if(done>=trickForgive(r.trick)){ completeTrick(r); // close enough
       landGrade=done>=0.92?'AMAZING!':'CLOSE ONE!'; }
-    else if(done>=TRICK_SAVE){
+    else if(done>=trickSave(r.trick)){
       // caught it — the trick pays nothing, but you keep the bike under you
       r.trick=null; r.trickT=0; r.pendingMeter=0; r.pendingNames.length=0; r.chain=0;
       r.vs*=0.72;
@@ -1851,7 +1859,17 @@ function aiThink(r,dt){
   inp.pedal=inp.brake?0:1;
 
   let target;
-  if(hunting){
+  if(hunting&&DIFF.huntRace){
+    // BRUTAL hunt-on-the-move: NEVER sacrifice the race to wait. Keep the base
+    // racing throttle (maxV, boosted by the hunter's rubber floor so they run
+    // you down from behind), burn the war chest, and just steer onto the
+    // player — the strike logic swings the instant you're in reach. Deck a
+    // BRUTAL rival and they punish you AND stay in the race.
+    const fireAt=r.s>FINISH_S-400?BOOST_MIN+3:BOOST_MIN+2;
+    if(!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>(r.boosting?BOOST_MIN+1:fireAt))
+      inp.boost=true;
+    target=player.lat;
+  } else if(hunting){
     // run the player down — feathering the approach so they don't blow past —
     // then creep into arm's reach; if overshot, stall and wait (grudges are patient)
     if(gap>2.5){
@@ -2565,7 +2583,7 @@ function updateHud(){
     tw.classList.remove('hidden');
     const fill=document.getElementById('trickFill');
     fill.style.width=(clamp(player.trickT/def.dur,0,1)*100).toFixed(0)+'%';
-    fill.classList.toggle('safe',player.trickT>=def.dur*TRICK_FORGIVE);
+    fill.classList.toggle('safe',player.trickT>=def.dur*trickForgive(player.trick));
   } else tw.classList.add('hidden');
   if(state==='racing'&&raceTime>9&&hudEls.hint.style.opacity!=='0') hudEls.hint.style.opacity='0';
   if(state==='countdown') hudEls.hint.style.opacity='1';
@@ -2910,7 +2928,7 @@ window.GAME={
   get youArrowVisible(){ return !!(youArrow&&youArrow.visible); },
   get biomeEdges(){ return [COLD_EDGE,WARM_EDGE]; },
   get difficulty(){ return DIFF_ID; },
-  get diffKnobs(){ return { pace:DIFF.pace, aggr:DIFF.aggr, rev:DIFF.rev, company:DIFF.company }; },
+  get diffKnobs(){ return { pace:DIFF.pace, aggr:DIFF.aggr, rev:DIFF.rev, company:DIFF.company, huntRace:!!DIFF.huntRace }; },
   get paused(){ return PAUSED; },
   get uiTicks(){ return AudioSys.uiTicks; },
   get rivalNamePool(){ return RIVAL_NAMES.slice(); },

@@ -57,8 +57,10 @@ no build step, no npm, no server, no network.
 **How it plays:** the mountain does most of the accelerating — pedal out of the gate and
 out of slow corners, brake before the sweepers, and hit the wooden kickers for airtime.
 Start a trick in the air and *land after its bar fills* to bank boost meter; land mid-trick
-and you eat dirt — though a trick that's *nearly* done can be saved: no payout, a wobble,
-but you keep the bike under you. Chain tricks in one jump for bonus meter, and clean riding trickles
+and you eat dirt — though a pose trick that's *nearly* done can be saved: no payout, a wobble,
+but you keep the bike under you. The **backflip** is stricter, though — it's a full rotation,
+so land it before you've come most of the way around and you land on your head, no save.
+Chain tricks in one jump for bonus meter, and clean riding trickles
 meter in on its own — crashing dumps most of it. Monster airs land heavy but rideable
 (air drag caps your fall speed) — what actually bites is casing an upslope face at
 speed. The groomed line is fastest, but the
@@ -90,15 +92,17 @@ cassette-deck button.
 
 Difficulties: **CHILL** (a pack you can outride cleanly), **MAYHEM** (the game as
 designed — rivals cruise above your clean ceiling; spend boost, tricks, draft or fists),
-and **BRUTAL** (they're 12% faster than your clean ceiling, roll off the gate loaded
-with boost, swing constantly — and a BRUTAL grudge does not expire: deck a rival and
-they hunt you for the rest of the race, closing faster than physics ought to allow;
-winnable, barely, and never cleanly. Fall off the back on BRUTAL and nobody dawdles
-for you — you're alone with the mountain). Difficulty also scales the revenge machine
-itself: how long a decked rival hunts you, how fast they run you down, and how
-little warning their swing gives. Personal bests and ghosts are
-tracked **per mountain per difficulty**; everything recorded before difficulties
-existed counts as MAYHEM.
+and **BRUTAL** (they're ~15% faster than your clean ceiling, roll off the gate loaded
+with boost, and swing constantly — and a BRUTAL grudge does not expire: deck a rival and
+they hunt you for the rest of the race, closing faster than physics ought to allow.
+Crucially, a BRUTAL avenger **keeps racing while it hunts** — it won't park to wait for
+payback the way a CHILL or MAYHEM grudge does, so knocking rivals down no longer thins
+the field; they punish you *and* stay in the race. Winnable, barely, and never cleanly.
+Fall off the back on BRUTAL and nobody dawdles for you — you're alone with the mountain).
+Difficulty also scales the revenge machine itself: how long a decked rival hunts you, how
+fast they run you down, and how little warning their swing gives. Personal bests and
+ghosts are tracked **per mountain per difficulty**; everything recorded before
+difficulties existed counts as MAYHEM.
 
 **Chasing the mountain:** the game remembers your best time per mountain (stored locally
 in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW
