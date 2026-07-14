@@ -107,9 +107,11 @@
   #tag { margin-top:14px; font-size:15px; font-style:italic; color:#cfe; text-shadow:2px 2px 0 #000; }
   #bestLine { margin-top:8px; font-size:17px; font-style:italic; color:#ffd23f; text-shadow:2px 2px 0 #000; letter-spacing:1px; }
   #chalLine { margin-top:4px; font-size:16px; font-style:italic; color:#59ff7a; text-shadow:2px 2px 0 #000; letter-spacing:1px; }
-  #modeSwap { margin-top:10px; font-size:15px; font-style:italic; color:#9fd; text-shadow:2px 2px 0 #000;
-    cursor:pointer; pointer-events:auto; }
-  #modeSwap:hover { color:#fff; }
+  .selRow { margin-top:8px; font-size:16px; font-style:italic; color:#9fd; text-shadow:2px 2px 0 #000;
+    cursor:pointer; pointer-events:auto; letter-spacing:1px; }
+  .selRow b { color:#ffd23f; }
+  .selRow:hover { color:#fff; }
+  .selRow .k { font-size:11px; color:#7f95a8; }
   #ghLink { color:#ffd23f; text-decoration:none; pointer-events:auto; }
   #ghLink:hover { text-decoration:underline; }
   #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
@@ -288,7 +290,8 @@
       <span><b>🎮 PAD</b></span><span>Stick steer · R2 pedal · L2 brake/flip · R1 boost · ✕ start/hop · □/○ punch/kick · L1 △ R3 tricks</span>
     </div>
     <div id="pressEnter">PRESS ENTER</div>
-    <div id="modeSwap"></div>
+    <div id="selMountain" class="selRow"></div>
+    <div id="selDiff" class="selRow"></div>
     <div id="foot"><a id="ghLink" href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a><br>
       Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · three.js r128 (MIT) bundled</div>
   </div>
@@ -375,8 +378,30 @@ function fmtTime(t){ if(t==null) return '—'; const m=Math.floor(t/60), s=t-m*6
 
 // ------------------------------------------------------------ config -------
 const SEED=20030723;                       // Easter Egg! Downhill Domination's release date — July 23, 2003
+// ---- mountains: three fixed courses + the date-seeded Daily -----------------
+// each fixed course has its own personality knobs, forestation and biome bands
+const TERRAIN_ORDER=['classic','timber','rock','daily'];
+const TERRAINS={
+  classic:{ label:'CLASSIC',    seed:SEED,     v:null, trees:1,   rocks:0 },
+  timber: { label:'TIMBERLINE', seed:19770527, trees:1.8, rocks:0,
+    v:{twist:1.18,rhythm:0.78,chute:0.92,dropN:3,rampN:12,cold:0.12,warm:0.9} },
+  rock:   { label:'ROCKGARDEN', seed:19930211, trees:0.35, rocks:1,
+    v:{twist:0.82,rhythm:1.22,chute:1.16,dropN:6,rampN:8,cold:0.14,warm:0.52} },
+};
+// ---- difficulty: CHILL / MAYHEM / BRUTAL ------------------------------------
+// mayhem is the canonical game (empty storage suffix, so every PB, ghost and
+// challenge link from before difficulties existed falls back to it)
+const DIFF_ORDER=['chill','mayhem','brutal'];
+const DIFFS={
+  chill: { label:'CHILL',  suffix:'-e', pace:1.0,   rubP:0.26, rubSat:60, leash:0.09,  corner:4.9, aggr:0.5, cd:1.4, meter0:[5,18] },
+  mayhem:{ label:'MAYHEM', suffix:'',   pace:1.035, rubP:0.42, rubSat:45, leash:0.075, corner:5.2, aggr:1,   cd:1,   meter0:[15,35] },
+  brutal:{ label:'BRUTAL', suffix:'-b', pace:1.075, rubP:0.52, rubSat:38, leash:0.04,  corner:5.5, aggr:1.5, cd:0.7, meter0:[30,55] },
+};
+let DIFF_ID='mayhem', DIFF=DIFFS.mayhem;
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
-let COLD_EDGE=0.32, WARM_EDGE=0.68;        // where the frost ends / the canyon begins (dailies move these)
+let COLD_EDGE=0.32, WARM_EDGE=0.68;        // where the frost ends / the canyon begins (per-course)
+let TREE_D=1, ROCK_D=0;                    // forestation / rock-garden density for the current course
+function terrLabel(id){ return id==='daily'?'DAILY':TERRAINS[id].label; }
 function dailySeed(){ const d=new Date(); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }
 function seedLabel(s){ const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   return m[Math.floor(s/100)%100-1]+' '+(s%100); }
@@ -438,17 +463,21 @@ function blur(arr,win,passes){
 function buildTrack(){
   const rng=mulberry32(CUR_SEED);
   NOFF=(CUR_SEED%977)*13.7;   // shifts the terrain noise field per mountain
-  // every non-classic mountain rolls a personality of its own: macro-knobs
-  // (separate rng, so the main stream is untouched) swing the twistiness,
-  // rhythm, steepness, drop/ramp counts and biome bands well outside the
-  // classic's tuning — dailies should FEEL different, not just re-noised
+  // every course gets a personality: the fixed mountains carry hand-tuned
+  // knobs, dailies roll theirs from a separate rng (main stream untouched) —
+  // twistiness, rhythm, steepness, drop/ramp counts, biome bands, forestation
   const vr=mulberry32((CUR_SEED^0x9e3779)>>>0);
-  const V=CUR_SEED===SEED
-    ?{ twist:1, rhythm:1, chute:1, dropN:4, rampN:12 }
-    :{ twist:0.72+vr()*0.75, rhythm:0.68+vr()*0.85, chute:0.85+vr()*0.5,
-       dropN:2+Math.floor(vr()*5), rampN:7+Math.floor(vr()*6) };
-  COLD_EDGE=CUR_SEED===SEED?0.32:0.18+vr()*0.34;
-  WARM_EDGE=CUR_SEED===SEED?0.68:0.55+vr()*0.35;
+  const T=Object.values(TERRAINS).find(t=>t.seed===CUR_SEED);
+  let V;
+  if(T&&T.v){ V=T.v; COLD_EDGE=T.v.cold; WARM_EDGE=T.v.warm; TREE_D=T.trees; ROCK_D=T.rocks; }
+  else if(T){ V={ twist:1, rhythm:1, chute:1, dropN:4, rampN:12 };
+    COLD_EDGE=0.32; WARM_EDGE=0.68; TREE_D=1; ROCK_D=0; }
+  else { // a daily: roll everything, rocks included some days
+    V={ twist:0.72+vr()*0.75, rhythm:0.68+vr()*0.85, chute:0.85+vr()*0.5,
+        dropN:2+Math.floor(vr()*5), rampN:7+Math.floor(vr()*6) };
+    COLD_EDGE=0.18+vr()*0.34; WARM_EDGE=0.55+vr()*0.35;
+    TREE_D=0.55+vr()*1.1; ROCK_D=vr()<0.35?0.6+vr()*0.6:0;
+  }
   // curvature: alternating straights & sweeping turns, biased back toward heading 0
   let lastTurn=rng()<0.5?1:-1, wasTurn=false, hEst=0;
   const curv=buildProfile(rng, (s)=>{
@@ -681,10 +710,14 @@ window.addEventListener('keydown',e=>{
   else if(e.code==='KeyF') pressQueue.kick=nowS();
   // title-screen mode keys must beat the trick keys in this chain — C is
   // also the heel clicker, and the trick branch would shadow it forever
-  // mode keys SWAP the mountain but stay on the title — auto-starting here
+  // mode keys SWAP the selection but stay on the title — auto-starting here
   // meant a stray tap/keypress silently raced you onto the wrong mountain
-  else if(e.code==='KeyD'&&DEMO) setMode('daily');
+  else if(e.code==='KeyD'&&DEMO) setMode('daily',dailyEntrySeed());
   else if(e.code==='KeyC'&&DEMO) setMode('classic');
+  else if(e.code==='ArrowLeft'&&DEMO) cycleMountain(-1);
+  else if(e.code==='ArrowRight'&&DEMO) cycleMountain(1);
+  else if(e.code==='ArrowUp'&&DEMO) cycleDiff(1);
+  else if(e.code==='ArrowDown'&&DEMO) cycleDiff(-1);
   else if(e.code==='KeyZ'){ pressQueue.trick='nohander'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyX'){ pressQueue.trick='superman'; pressQueue.trickAt=nowS(); }
   else if(e.code==='KeyC'){ pressQueue.trick='heel'; pressQueue.trickAt=nowS(); }
@@ -821,7 +854,7 @@ function initTouch(){
   // tap anywhere: start from title / race again from results — and use that same
   // gesture to (re)enter fullscreen, since browsers only honour it inside one
   window.addEventListener('pointerdown',()=>{ AudioSys.ensure();
-    if(DEMO||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt)){
+    if(DEMO||(state==='finished'&&resultsShownAt>0&&gameTime>=resultsShownAt+1.6)){
       pressQueue.enter=true;
       if(DEMO) enterFullscreen();
     }
@@ -911,6 +944,7 @@ function initThree(){
 
 // ------------------------------------------------------------ world --------
 const colTreeBuckets=new Map(); // s-bucket -> [{s,lat,r}]
+const colRockBuckets=new Map(); // rock gardens: boulders ON the line
 function addColTree(s,lat,r){ const b=Math.floor(s/10);
   if(!colTreeBuckets.has(b)) colTreeBuckets.set(b,[]); colTreeBuckets.get(b).push({s,lat,r}); }
 
@@ -918,6 +952,7 @@ let WG=null; // everything seed-dependent lives in one group so mountains can be
 function buildWorld(){
   WG=new THREE.Group(); scene.add(WG);
   colTreeBuckets.clear();
+  colRockBuckets.clear();
   buildTerrain();
   buildScenery();
   buildGates();
@@ -1033,18 +1068,49 @@ function buildScenery(){
     m4.compose(pv.clone().setY(y+2.2*sc+2.6*sc*0.5), q, sv.set(sc,sc,sc)); push(arr,s,m4);
     if(Math.abs(lat)<RIDE_W+1) addColTree(s,lat,0.75*sc);
   }
-  // slalom trees ON the racing line (weave or crash) — kept clear of ramps/drops/gates
-  for(let s=200;s<FINISH_S-80;s+=130+rng()*90){
+  // slalom trees ON the racing line (weave or crash) — kept clear of ramps/
+  // drops/gates; spacing scales with the course's forestation
+  for(let s=200;s<FINISH_S-80;s+=(130+rng()*90)/Math.max(TREE_D,0.05)){
     const sT=s+rng()*30;
     const nearFeature=ramps.some(r=>sT>r.s0-30&&sT<r.s0+r.len+45)||drops.some(d=>Math.abs(d.s0-sT)<45);
     if(nearFeature) continue;
     addTree(sT,(rng()*2-1)*6.2, pickFol(sT));
   }
+  // rock GARDENS: clusters of low boulders that claim one side of the line —
+  // spot the pale grey early, pick a side, or bunny-hop through. They hide
+  // lower than trees and hit just as hard. Kept below the frost line so the
+  // grey always reads against dirt, never against snow.
+  const rocksLine={};
+  if(ROCK_D>0){
+    // ramps need a clean approach AND landing; drops mostly a clean landing;
+    // and no gardens on sweepers — centrifugal throw drags riders across them
+    const rkClear=(sT)=>!(ramps.some(r=>sT>r.s0-26&&sT<r.s0+r.len+45)||drops.some(d=>sT>d.s0-18&&sT<d.s0+50))
+      &&Math.abs(sampleTrack(sT,TMP_A).curv)<0.010;
+    for(let s=Math.max(230,FINISH_S*COLD_EDGE+40);s<FINISH_S-110;s+=(88+rng()*70)/ROCK_D){
+      let s0=-1; // gardens hunt forward for a gap between features instead of dying
+      for(let t=0;t<6;t++){ const c=s+rng()*26+t*34;
+        if(c<FINISH_S-80&&rkClear(c)&&rkClear(c+17)){ s0=c; break; } }
+      if(s0<0) continue;
+      const cLat=(rng()*2-1)*4.6, n=2+Math.floor(rng()*3.2);
+      for(let i=0;i<n;i++){
+        const sT=s0+i*(3.5+rng()*4);
+        if(!rkClear(sT)) continue;
+        const lat=clamp(cLat+(rng()*2-1)*2.4,-6.6,6.6), sc=0.65+rng()*0.55;
+        worldPos(sT,lat,groundHeight(sT,lat)-0.08,pv);
+        q.setFromEuler(e.set(rng()*3,rng()*3,rng()*3));
+        m4.compose(pv,q,sv.set(sc*(1+rng()*0.5),sc*0.8,sc*(1+rng()*0.5)));
+        push(rocksLine,sT,m4);
+        const b=Math.floor(sT/10);
+        if(!colRockBuckets.has(b)) colRockBuckets.set(b,[]);
+        colRockBuckets.get(b).push({s:sT,lat,r:0.8*sc});
+      }
+    }
+  }
   // scattered trees across the open hillside + forest on the slopes beyond
   for(let s=60;s<S_MAX-40;s+=8+rng()*10){
-    if(rng()<0.4){ const side=rng()<0.5?1:-1;
+    if(rng()<Math.min(0.4*TREE_D,0.85)){ const side=rng()<0.5?1:-1;
       addTree(s+rng()*4, side*(9.5+rng()*15.5), pickFol(s)); }
-    for(let k=0;k<2;k++){ if(rng()<0.8){ const side=rng()<0.5?1:-1;
+    for(let k=0;k<2;k++){ if(rng()<Math.min(0.8*Math.max(TREE_D,0.45),0.95)){ const side=rng()<0.5?1:-1;
       addTree(s+rng()*8, side*(28+rng()*36), pickFol(s)); } }
   }
   // boulders (outside the rideable corridor; sunk to survive far-column jitter)
@@ -1077,6 +1143,7 @@ function buildScenery(){
   inst(new THREE.ConeGeometry(1.3,3.0,6), 0x77772f, folDry);
   inst(new THREE.DodecahedronGeometry(1,0), 0x8d8a84, rocks1);
   inst(new THREE.DodecahedronGeometry(1,0), 0x6f6d68, rocks2);
+  inst(new THREE.DodecahedronGeometry(1,0), 0xa9a59b, rocksLine); // pale grey: must read against warm dirt at speed
 }
 
 function makeBannerTex(main,sub,bg,checker){
@@ -1302,7 +1369,8 @@ function crashRider(r,cause){
     shake+=cause==='punched'?1.1:0.7;
     RACE_STATS.crashes++;
     clearTouchBoost();
-    popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='bail'?'BAILED MID-TRICK!'
+    popup(cause==='punched'?'PUNCHED!':cause==='tree'?'TREE!':cause==='rock'?'ROCK!'
+      :cause==='bail'?'BAILED MID-TRICK!'
       :cause==='hard'?'FLAT LANDING!':cause==='wall'?'INTO THE WALL!':'CRASHED!','bad');
     if(cause==='punched'){ const f=document.getElementById('hitflash');
       f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
@@ -1415,9 +1483,10 @@ function riderStep(r,dt){
     if(r.boosting){ a+=BOOST_A; r.meter=Math.max(0,r.meter-BOOST_DRAIN*dt); }
     // clean riding slowly builds adrenaline
     else if(!r.finished&&r.vs>10) r.meter=Math.min(100,r.meter+METER_TRICKLE*(r.isPlayer?1:0.85+r.rubber*0.9)*dt);
-    // rivals cruise a touch above the player's clean ceiling — matching them
-    // without spending boost, tricks or slipstream is not supposed to work
-    const cap=SOFTCAP_V*r.def.top*(r.isPlayer?1:1.035)*(1+r.rubber*0.5)+(r.boosting?4:0);
+    // rivals cruise a touch above the player's clean ceiling (difficulty
+    // sets how far) — matching them without spending boost, tricks or
+    // slipstream is not supposed to work
+    const cap=SOFTCAP_V*r.def.top*(r.isPlayer?1:DIFF.pace)*(1+r.rubber*0.5)+(r.boosting?4:0);
     if(r.vs>cap) a-=(r.vs-cap)*0.9;
     r.vs=Math.max(0,r.vs+a*dt);
 
@@ -1492,15 +1561,20 @@ function riderStep(r,dt){
     }
   }
 
-  // --- tree collision (slalom trees on the line + corridor trees) ---
+  // --- obstacle collision (slalom trees + rock gardens on the line) ---
   if(!r.crashed&&r.invuln<=0&&(r.y-gnd)<2.5){
     const b=Math.floor(r.s/10);
-    for(let bi=b-1;bi<=b+1;bi++){
-      const list=colTreeBuckets.get(bi); if(!list) continue;
-      for(const t of list){
+    for(let bi=b-1;bi<=b+1&&!r.crashed;bi++){
+      const list=colTreeBuckets.get(bi);
+      if(list) for(const t of list){
         if(Math.abs(t.s-r.s)<1.1&&Math.abs(t.lat-r.lat)<0.9){ crashRider(r,'tree'); break; }
       }
       if(r.crashed) break;
+      const rl=colRockBuckets.get(bi);
+      // rocks are low: clearing them by air is easier than clearing a tree
+      if(rl&&(r.y-gnd)<1.1) for(const t of rl){
+        if(Math.abs(t.s-r.s)<1.0&&Math.abs(t.lat-r.lat)<t.r){ crashRider(r,'rock'); break; }
+      }
     }
   }
 
@@ -1592,9 +1666,21 @@ function aiThink(r,dt){
 
   // rubber-band vs player: help saturates within half a straight, so the pack
   // stays glued to a clean leader instead of settling far behind; only a light
-  // leash on leaders — nobody waits for a rider who isn't racing
+  // leash on leaders — nobody waits for a rider who isn't racing. All knobs
+  // come from the active difficulty.
   const gap=player.s-r.s;
-  r.rubber=gap>=0?clamp(gap/45,0,1)*0.42:clamp(gap/160,-1,0)*0.075;
+  r.rubber=gap>=0?clamp(gap/DIFF.rubSat,0,1)*DIFF.rubP:clamp(gap/160,-1,0)*DIFF.leash;
+  // comeback company: when the player runs dead last but is still racing,
+  // the two riders nearest ahead soft-pedal just enough to stay in sight —
+  // the leaders race on, so the podium fight is untouched. Players who are
+  // giving up (crash-looping, or 2+ minutes in) get left behind for real.
+  if(!DEMO&&gap<-70&&raceTime<120&&RACE_STATS.crashes<6&&!r.finished){
+    const ahead=riders.filter(o=>!o.isPlayer&&!o.finished&&o.s>player.s);
+    if(ahead.length===riders.length-1){
+      ahead.sort((a,b)=>a.s-b.s);
+      if(r===ahead[0]||r===ahead[1]) r.rubber=Math.min(r.rubber,-0.28);
+    }
+  }
 
   // revenge mode: a decked rival drops the race plan and hunts the player
   // until payback lands — or the hunt goes stale, or the line is too close
@@ -1608,7 +1694,7 @@ function aiThink(r,dt){
   // corner speed management (vendetta or not, corners still bite)
   const look=16+r.vs*0.9;
   const cAhead=sampleTrack(r.s+look,TMP_C).curv;
-  const maxV=Math.sqrt((5.2+r.rubber*2.6)*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
+  const maxV=Math.sqrt((DIFF.corner+r.rubber*2.6)*r.def.corner/Math.max(Math.abs(cAhead),0.0004));
   inp.brake=r.vs>maxV*1.06?1:0;
   inp.pedal=inp.brake?0:1;
 
@@ -1659,13 +1745,36 @@ function aiThink(r,dt){
     if(!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>(r.boosting?BOOST_MIN+1:fireAt))
       inp.boost=true;
   }
-  // dodge slalom trees ahead
-  const b0=Math.floor(r.s/10);
-  for(let bi=b0;bi<=b0+3;bi++){
-    const list=colTreeBuckets.get(bi); if(!list) continue;
-    for(const t of list){
-      const ds=t.s-r.s;
-      if(ds>2&&ds<26&&Math.abs(t.lat-target)<1.7) target=t.lat+(r.lat>=t.lat?2.0:-2.0);
+  // dodge slalom trees and rock gardens ahead: a lone obstacle gets a side-
+  // step; when the side-step lands on a neighbour (clustered rocks), swing
+  // wide around the whole garden instead of pinballing between members
+  const b0=Math.floor(r.s/10), obs=[];
+  for(let bi=b0;bi<=b0+4;bi++){
+    for(const buckets of [colTreeBuckets,colRockBuckets]){
+      const list=buckets.get(bi); if(!list) continue;
+      for(const t of list){ const ds=t.s-r.s; if(ds>2&&ds<34) obs.push(t); }
+    }
+  }
+  if(obs.length){
+    const blockers=obs.filter(t=>Math.abs(t.lat-target)<1.55);
+    if(blockers.length){
+      let lo=99,hi=-99;
+      for(const t of blockers){ lo=Math.min(lo,t.lat); hi=Math.max(hi,t.lat); }
+      // two candidate lanes past the blocking set — but a lane is only real if
+      // it clears EVERY obstacle ahead, not just the ones on the old line
+      const clearOf=(lat)=>obs.every(t=>Math.abs(t.lat-lat)>=1.55);
+      let cand=[lo-2.1,hi+2.1].filter(c=>clearOf(c)&&Math.abs(c)<=7.2);
+      if(!cand.length){ let glo=99,ghi=-99;
+        for(const t of obs){ glo=Math.min(glo,t.lat); ghi=Math.max(ghi,t.lat); }
+        cand=[glo-2.1,ghi+2.1];
+      }
+      // nearest-to-body wins: the rider's own position is the hysteresis that
+      // stops the pick flip-flopping mid-garden
+      target=cand.reduce((a,b)=>Math.abs(b-r.lat)<Math.abs(a-r.lat)?b:a);
+      // and ride it like a human: come off the boost into a garden, brake
+      // only when genuinely hot — cautious, not slow. Avengers don't brake:
+      // a rider out for payback takes the gap at full send
+      if(!hunting&&r.vs>18+DIFF.corner*0.9){ inp.brake=true; inp.boost=false; }
     }
   }
   target=clamp(target,-7.2,7.2);
@@ -1700,7 +1809,7 @@ function aiThink(r,dt){
         tryStrike(r,r.strikeKind);
       } else { if(r.strikeKind==='kick') r.kickAnimT=0; else r.punchAnimT=0;
         if(Math.abs(r.s-player.s)<40) AudioSys.whoosh(); }
-      r.punchCd=r.revengeT>0?0.7+Math.random()*0.5:r.grudge?2.5+Math.random()*2:4+Math.random()*3;
+      r.punchCd=(r.revengeT>0?0.7+Math.random()*0.5:r.grudge?2.5+Math.random()*2:4+Math.random()*3)*DIFF.cd;
     }
   } else if(r.punchCd<=0&&r.grounded){
     if(hunting){
@@ -1719,7 +1828,7 @@ function aiThink(r,dt){
         if(ds<2.0&&dl<1.3&&Math.abs(o.y-r.y)<PUNCH_DY){
           const isP=o.isPlayer;
           if(isP&&gameTime-lastAIPunchOnPlayer<2) continue;
-          if(Math.random()<r.def.aggr*(isP?(r.grudge?4:2.6):0.45*(1-r.rubber))*dt*2.2){
+          if(Math.random()<r.def.aggr*(isP?(r.grudge?4:2.6):0.45*(1-r.rubber))*DIFF.aggr*dt*2.2){
             r.windupT=0; r.windupTarget=o; r.strikeKind=Math.random()<0.35?'kick':'punch';
             r.strikeSide=Math.sign(o.lat-r.lat)||1;   // cock the swing on the victim's side
             if(isP) AudioSys.tell();   // audible warning when you're the target
@@ -1773,34 +1882,53 @@ let ghostRec=[], ghostData=null, ghostShow=true, ghostViz=null;
 // the 👻 top button dims while the ghost is hidden (keyboard G repaints it too)
 function paintGhostBtn(){ const el=document.getElementById('tGhost'); if(el) el.style.opacity=ghostShow?'':'0.35'; }
 function loadGhost(){ ghostData=(BEST.ghost&&BEST.ghost.length>30)?BEST.ghost:null; }
-// the classic key is scoped to its seed: if the classic mountain is ever
-// redefined, stale PBs and ghosts from the old terrain don't haunt the new one
-function bestKey(){ return MODE==='classic'?SAVE_KEY+'-c'+SEED:SAVE_KEY+'-d'+CUR_SEED; }
+// keys are scoped per course seed and per difficulty. MAYHEM's suffix is
+// empty, so every PB/ghost recorded before difficulties existed lands there.
+function bestKey(){ return SAVE_KEY+'-'+(MODE==='daily'?'d':'c')+CUR_SEED+DIFF.suffix; }
 function loadBestFor(){ try{ BEST=JSON.parse(localStorage.getItem(bestKey())||'{}')||{}; }catch(e){ BEST={}; } loadGhost(); }
 function saveBest(){ try{ localStorage.setItem(bestKey(),JSON.stringify(BEST)); }catch(e){} }
 
-// challenge links: ?c=c-<time> (classic) or ?c=d-<seed>-<time> (a specific daily)
+// challenge links. Current format carries course + difficulty:
+//   ?c=x-<seed>-<time>-<chill|mayhem|brutal>
+// Legacy links keep working and fall back to MAYHEM:
+//   ?c=c-<time> (the classic) · ?c=d-<seed>-<time> (a specific daily)
 let CHAL=null, lastChallengeLink='';
+function terrainForSeed(seed){
+  for(const id in TERRAINS) if(TERRAINS[id].seed===seed) return id;
+  return 'daily';
+}
 try{
   const cRaw=new URLSearchParams(location.search).get('c');
   if(cRaw){
     let m;
-    if((m=cRaw.match(/^c-(\d+(?:\.\d+)?)$/))) CHAL={mode:'classic',seed:SEED,time:+m[1]};
-    else if((m=cRaw.match(/^d-(\d{8})-(\d+(?:\.\d+)?)$/))) CHAL={mode:'daily',seed:+m[1],time:+m[2]};
-    if(CHAL&&!(CHAL.time>10&&CHAL.time<3600)) CHAL=null;
+    if((m=cRaw.match(/^c-(\d+(?:\.\d+)?)$/))) CHAL={seed:SEED,time:+m[1],diff:'mayhem'};
+    else if((m=cRaw.match(/^d-(\d{8})-(\d+(?:\.\d+)?)$/))) CHAL={seed:+m[1],time:+m[2],diff:'mayhem'};
+    else if((m=cRaw.match(/^x-(\d+)-(\d+(?:\.\d+)?)-(chill|mayhem|brutal)$/)))
+      CHAL={seed:+m[1],time:+m[2],diff:m[3]};
+    if(CHAL){ CHAL.terrain=terrainForSeed(CHAL.seed);
+      if(!(CHAL.time>10&&CHAL.time<3600)) CHAL=null; }
   }
 }catch(e){ CHAL=null; }
-function challengeActive(){ return CHAL&&CHAL.mode===MODE&&CHAL.seed===CUR_SEED; }
+// competing = same course AND same difficulty; switching either leaves the
+// challenge waiting (indicated, never blocked)
+function challengeActive(){ return CHAL&&CHAL.seed===CUR_SEED&&CHAL.diff===DIFF_ID; }
+function chalCode(t){ return 'x-'+CUR_SEED+'-'+t.toFixed(2)+'-'+DIFF_ID; }
 function challengeLink(t){
   const base=location.href.split('?')[0].split('#')[0];
-  return base+'?c='+(MODE==='classic'?('c-'+t.toFixed(2)):('d-'+CUR_SEED+'-'+t.toFixed(2)));
+  return base+'?c='+chalCode(t);
 }
 function setMode(mode,seed){
   MODE=mode;
-  const s=mode==='classic'?SEED:(seed||dailySeed());
+  const s=mode==='daily'?(seed||dailySeed()):TERRAINS[mode].seed;
   if(s!==CUR_SEED){ rebuildWorld(s);
     for(const r of riders) r.y=groundHeight(r.s,r.lat); }
   loadBestFor();
+  refreshTitle();
+}
+function setDiff(id){
+  if(!DIFFS[id]||id===DIFF_ID) return;
+  DIFF_ID=id; DIFF=DIFFS[id];
+  loadBestFor();   // each difficulty keeps its own bests and ghosts
   refreshTitle();
 }
 
@@ -1813,13 +1941,30 @@ function refreshTitle(){
   const be=document.getElementById('bestLine');
   be.textContent=BEST.time?('YOUR BEST · '+fmtTime(BEST.time)):(MODE==='daily'?'NO TIME SET TODAY — BE FIRST':'');
   const cl=document.getElementById('chalLine');
-  cl.textContent=challengeActive()?('⚑ CHALLENGE — BEAT '+fmtTime(CHAL.time)):'';
+  cl.textContent=challengeActive()?('⚑ CHALLENGE — BEAT '+fmtTime(CHAL.time))
+    :(CHAL?('⚑ challenge waits on '+terrLabel(CHAL.terrain)+' · '+DIFFS[CHAL.diff].label+' — switch back to race it'):'');
+  cl.style.color=challengeActive()?'':'#9aa0a8';
   document.getElementById('pressEnter').textContent=
     challengeActive()?(IS_TOUCH?'TAP — ACCEPT CHALLENGE':'ENTER — ACCEPT CHALLENGE')
     :(IS_TOUCH?'TAP TO START':'PRESS ENTER');
-  document.getElementById('modeSwap').textContent=
-    MODE==='classic'?((IS_TOUCH?'TAP HERE':'PRESS D')+' — TODAY\'S DAILY MOUNTAIN ('+seedLabel(dailySeed())+')')
-                    :((IS_TOUCH?'TAP HERE':'PRESS C')+' — BACK TO THE CLASSIC MOUNTAIN');
+  const dTag=MODE==='daily'?' · '+seedLabel(CUR_SEED):'';
+  document.getElementById('selMountain').innerHTML=
+    '⛰ MOUNTAIN &nbsp;◀ <b>'+terrLabel(MODE)+dTag+'</b> ▶'+(IS_TOUCH?' <span class="k">TAP</span>':' <span class="k">← →</span>');
+  document.getElementById('selDiff').innerHTML=
+    '🔥 DIFFICULTY &nbsp;◀ <b>'+DIFF.label+'</b> ▶'+(IS_TOUCH?' <span class="k">TAP</span>':' <span class="k">↑ ↓</span>');
+}
+// while a daily challenge waits, DAILY means THAT daily — otherwise cycling
+// away and back would land on today's seed and the challenge could never be
+// re-armed ("switch back to race it" has to stay true)
+function dailyEntrySeed(){ return CHAL&&CHAL.terrain==='daily'?CHAL.seed:dailySeed(); }
+function cycleMountain(dir){
+  const i=TERRAIN_ORDER.indexOf(MODE);
+  const next=TERRAIN_ORDER[(i+dir+TERRAIN_ORDER.length)%TERRAIN_ORDER.length];
+  setMode(next, next==='daily'?dailyEntrySeed():undefined);
+}
+function cycleDiff(dir){
+  const i=DIFF_ORDER.indexOf(DIFF_ID);
+  setDiff(DIFF_ORDER[(i+dir+DIFF_ORDER.length)%DIFF_ORDER.length]);
 }
 function resetRiders(){
   // fresh jersey colours every race
@@ -1833,10 +1978,10 @@ function resetRiders(){
     r.draftT=0; r.grudge=false; r.revengeT=0;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
     r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
-    r.meter=r.isPlayer?0:15+Math.random()*20;  // rivals roll off the gate with a war chest
+    r.meter=r.isPlayer?0:DIFF.meter0[0]+Math.random()*(DIFF.meter0[1]-DIFF.meter0[0]);
     r.boosting=false; r.boostLatch=false;
     r.crashed=false; r.crashT=0; r.invuln=0; r.punchAnimT=-1; r.kickAnimT=-1; r.windupT=-1;
-    r.punchCd=r.isPlayer?0:0.8+r.idx*0.5; r.reactT=0.08+Math.random()*0.3;
+    r.punchCd=r.isPlayer?0:(0.8+r.idx*0.5)*DIFF.cd; r.reactT=0.08+Math.random()*0.3;
     r.lineBias=(Math.random()*2-1)*3.2;
     r.viz.person.position.copy(r.viz.personHome); r.viz.person.rotation.set(0,0,0);
     r.viz.bike.rotation.set(0,0,0); r.viz.person.visible=true;
@@ -1984,7 +2129,9 @@ function updateRace(dt){
   }
   if(pressQueue.enter){
     pressQueue.enter=false;
-    if(DEMO||state==='finished'&&gameTime>=resultsShownAt) resetRace();
+    // touch waits a beat: adrenaline-tapping at the line must not skip the
+    // results before they've even been seen
+    if(DEMO||state==='finished'&&gameTime>=resultsShownAt+(IS_TOUCH?1.6:0)) resetRace();
   }
 }
 function showResults(){
@@ -2011,15 +2158,19 @@ function showResults(){
     sub+=player.chalDiff<0?' · CHALLENGE BEATEN':' · challenge +'+player.chalDiff.toFixed(2)+'s';
   document.getElementById('resSub').textContent=sub;
   document.getElementById('resRecap').textContent=raceRecap(order,place);
+  // on touch the race-again tap arms after a beat — show it arming
+  if(IS_TOUCH){ const ra=document.getElementById('resAgain');
+    ra.style.opacity='0.25'; ra.textContent='…';
+    setTimeout(()=>{ ra.style.opacity=''; ra.textContent='TAP — RACE AGAIN'; },1700); }
   document.getElementById('chalBtn').style.display=player.finished?'block':'none';
   document.getElementById('shareBtn').style.display=player.finished?'block':'none';
   SHARE_DATA=player.finished?{ place, time:player.finishTime, rank:player.rank||null,
     recap:raceRecap(order,place), newPB:!!player.newPB,
-    mode:MODE==='classic'?'CLASSIC MOUNTAIN':'DAILY MOUNTAIN '+seedLabel(CUR_SEED),
+    mode:terrLabel(MODE)+(MODE==='daily'?' · '+seedLabel(CUR_SEED):'')
+      +(DIFF_ID!=='mayhem'?' · '+DIFF.label:''),
     // the card always carries the PUBLIC challenge url — a screenshot of a
     // local run should still hand strangers a working race-me link
-    chal:'pranshuparmar.github.io/downhill-mayhem/?c='
-      +(MODE==='classic'?('c-'+player.finishTime.toFixed(2)):('d-'+CUR_SEED+'-'+player.finishTime.toFixed(2))) }:null;
+    chal:'pranshuparmar.github.io/downhill-mayhem/?c='+chalCode(player.finishTime) }:null;
   const rs=document.getElementById('rankStamp');
   if(player.finished&&player.rank){
     const d=RANK_DISPLAY[player.rank];
@@ -2177,10 +2328,13 @@ function initHud(){
     try{ navigator.clipboard.writeText(lastChallengeLink).then(done).catch(()=>{ prompt('Copy your challenge link:',lastChallengeLink); }); }
     catch(_){ prompt('Copy your challenge link:',lastChallengeLink); }
   });
-  const swap=document.getElementById('modeSwap');
-  swap.addEventListener('pointerdown',stopper);
-  swap.addEventListener('click',e=>{ e.stopPropagation();
-    setMode(MODE==='classic'?'daily':'classic'); });   // swap only; start stays a deliberate tap
+  // selector rows: tap cycles forward; swapping never auto-starts a race
+  const sm=document.getElementById('selMountain');
+  sm.addEventListener('pointerdown',stopper);
+  sm.addEventListener('click',e=>{ e.stopPropagation(); if(DEMO) cycleMountain(1); });
+  const sd2=document.getElementById('selDiff');
+  sd2.addEventListener('pointerdown',stopper);
+  sd2.addEventListener('click',e=>{ e.stopPropagation(); if(DEMO) cycleDiff(1); });
   document.getElementById('ghLink').addEventListener('pointerdown',stopper);
   hudEls.posBig=hudEls.pos.querySelector('.big');
   hudEls.speedNum=hudEls.speed.querySelector('.num');
@@ -2201,7 +2355,10 @@ function updateHud(){
   if(pt!==lastPosTxt){ lastPosTxt=pt; hudEls.posBig.textContent=pt; }
   const tt=fmtTime(player.finished?player.finishTime:(state==='racing'||state==='finished')?raceTime:0);
   if(tt!==lastTimeTxt){ lastTimeTxt=tt; hudEls.timer.textContent=tt; }
-  const mt=MODE==='daily'?('DAILY · '+seedLabel(CUR_SEED)):'';
+  const mtParts=[];
+  if(MODE!=='classic') mtParts.push(MODE==='daily'?('DAILY · '+seedLabel(CUR_SEED)):terrLabel(MODE));
+  if(DIFF_ID!=='mayhem') mtParts.push(DIFF.label);
+  const mt=mtParts.join(' · ');
   const mtEl=document.getElementById('modeTag');
   if(mtEl.textContent!==mt) mtEl.textContent=mt;
   const tg=(challengeActive()&&!player.finished&&(state==='racing'||state==='countdown'))?('⚑ TARGET '+fmtTime(CHAL.time)):'';
@@ -2522,7 +2679,8 @@ function boot(){
       'This file may be truncated — re-download <code>index.html</code> and reload.</div>';
     return;
   }
-  if(CHAL){ MODE=CHAL.mode; CUR_SEED=CHAL.seed; }   // a challenge link picks the mountain
+  // a challenge link picks the mountain AND the difficulty it was set on
+  if(CHAL){ MODE=CHAL.terrain; CUR_SEED=CHAL.seed; DIFF_ID=CHAL.diff; DIFF=DIFFS[CHAL.diff]; }
   buildTrack();
   initThree();
   buildWorld();
@@ -2559,6 +2717,8 @@ window.GAME={
   get shareData(){ return SHARE_DATA; },
   get youArrowVisible(){ return !!(youArrow&&youArrow.visible); },
   get biomeEdges(){ return [COLD_EDGE,WARM_EDGE]; },
+  get difficulty(){ return DIFF_ID; },
+  get terrainDensity(){ return [TREE_D,ROCK_D]; },
   groundAt(s,lat){ return groundHeight(s,lat); },
   test:{
     autopilotOn:false,
@@ -2574,7 +2734,10 @@ window.GAME={
       r.vs=player.vs; r.vlat=0; r.vy=0; r.windupT=-1; r.reactT=0; return r; },
     nearestTreeAfter(s){ for(let b=Math.floor(s/10);b<Math.floor((S_MAX)/10);b++){
       const l=colTreeBuckets.get(b); if(l) for(const t of l) if(t.s>s) return {s:t.s,lat:t.lat}; } return null; },
-    startMode(m,s){ setMode(m,s); resetRace(); },
+    startMode(m,s,d){ if(d) setDiff(d); setMode(m,s); resetRace(); },
+    setDifficulty(d){ setDiff(d); },
+    nearestRockAfter(s){ for(let b=Math.floor(s/10);b<Math.floor((S_MAX)/10);b++){
+      const l=colRockBuckets.get(b); if(l) for(const t of l) if(t.s>s) return {s:t.s,lat:t.lat,r:t.r}; } return null; },
     resultCardURL(){ return SHARE_DATA?buildResultCard().toDataURL('image/png'):null; },
     fastForward(seconds){ FAST=true; const dt=1/60, n=Math.round(seconds/dt);
       for(let i=0;i<n;i++){ if(this.autopilotOn&&!player.finished){ aiThink(player,dt); player.inp.boost=false; }

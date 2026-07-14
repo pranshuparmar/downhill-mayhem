@@ -66,14 +66,28 @@ slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`
 land a mid-air kick for an AIR STRIKE bonus. The pack races for keeps: rivals roll
 off the gate with boost already banked, burn it in visible surges to close any gap,
 hound a clean leader all the way down, and empty the tank over the final stretch —
-no lead is safe. Riders get fresh jersey colours every race.
+no lead is safe. Fall off the back and a couple of backmarkers will dawdle within
+sight to keep the race alive — but the leaders never wait, and if you're crash-looping
+they'll all leave you to the mountain. Riders get fresh jersey colours every race.
 
-**Two mountains:** the **Classic** is the same course forever — your lifetime best lives
-there. The **Daily** (press `D` on the title screen) is a brand-new mountain generated
-from today's UTC date, identical for every player in the world, with its own best time.
-Every daily rolls a personality of its own — twistier or straighter, steeper chutes,
-more or fewer drops and kickers, and its own alpine/canyon split — so no two days ride
-alike. New course every day, same rivals, no server involved.
+**Four mountains, three difficulties:** pick both on the title screen (`←`/`→` cycles
+the mountain, `↑`/`↓` the difficulty; tap the rows on touch).
+
+- **CLASSIC** — the canonical course: alpine frost into warm canyon, the all-rounder.
+- **TIMBERLINE** — dense forest, tight rhythm, slalom tree weaves everywhere.
+- **ROCKGARDEN** — wide, steep and littered with **rock gardens**: clusters of pale
+  boulders squatting on the line. They hide lower than trees and hit just as hard —
+  read them early, pick a side, or bunny-hop straight through. Even the AI checks
+  its speed and threads a lane (avengers don't).
+- **DAILY** — a brand-new mountain from today's UTC date, identical for every player in
+  the world. Every daily rolls its own personality: twist, rhythm, steepness, drops,
+  kickers, forestation, biome split — and some days, rocks.
+
+Difficulties: **CHILL** (a pack you can outride cleanly), **MAYHEM** (the game as
+designed — rivals cruise above your clean ceiling; spend boost, tricks, draft or fists),
+and **BRUTAL** (they're faster, angrier and swing constantly — winnable, barely).
+Personal bests and ghosts are tracked **per mountain per difficulty**; everything
+recorded before difficulties existed counts as MAYHEM.
 
 **Chasing the mountain:** the game remembers your best time per mountain (stored locally
 in your browser — still no accounts, nothing leaves your machine). Beat it for the NEW
@@ -88,9 +102,13 @@ and race your exact mountain and time. Restarts use a shortened
 countdown after the first race, and `Esc` returns to the title screen.
 
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
-screen — it copies a link that carries the exact mountain and your time. Anyone opening
-it sees your time as a target on their HUD and gets a BEATEN/missed verdict at the line.
-The whole challenge lives in the link; there is no server and no account.
+screen — it copies a link that carries the exact mountain, your time **and the
+difficulty you set it on**. Anyone opening it starts the game on that same mountain and
+difficulty, sees your time as a HUD target, and gets a BEATEN/missed verdict at the
+line. Switch mountain or difficulty and the challenge politely waits (the title says
+so) until you switch back — never blocked, just not competing. Old links from before
+difficulties existed count as MAYHEM. The whole challenge lives in the link; there is
+no server and no account.
 
 **The rest of the arsenal:** the title screen is a live broadcast — an AI-only race runs
 behind the menu with spectator camera cuts, arcade attract-mode style, until you press
