@@ -114,7 +114,18 @@
     cursor:pointer; pointer-events:auto; letter-spacing:1px; }
   .selRow b { color:#ffd23f; }
   .selRow:hover { color:#fff; }
+  .selRow.muted { opacity:.45; }   /* DAILY is the active pick — dim the crafted cursor */
   .selRow .k { font-size:11px; color:#7f95a8; }
+  /* DAILY showcase: its own framed card so it never reads as a fourth mountain */
+  .dailyRow { margin-top:12px; padding:7px 20px; font-size:15px; font-style:italic; letter-spacing:1px;
+    cursor:pointer; pointer-events:auto; color:#cfe3ff; border:2px solid rgba(120,175,255,.55);
+    background:rgba(28,58,116,.30); box-shadow:3px 3px 0 rgba(0,0,0,.55); text-shadow:2px 2px 0 #000; }
+  .dailyRow b { color:#ffd23f; }
+  .dailyRow:hover { border-color:#9fd; color:#fff; }
+  .dailyRow.active { border-color:#ffd23f; background:rgba(120,88,20,.36); color:#fff;
+    box-shadow:0 0 15px rgba(255,210,63,.5), 3px 3px 0 rgba(0,0,0,.55); }
+  .dailyRow .k { font-size:11px; color:#9fb4c8; }
+  .dailyRow.active .k { color:#ffd23f; }
   #ghLink { color:#ffd23f; text-decoration:none; pointer-events:auto; }
   #ghLink:hover { text-decoration:underline; }
   #modeTag { position:absolute; top:50px; left:50%; transform:translateX(-50%) skewX(-6deg); font-size:14px; color:#ffd23f; }
@@ -274,6 +285,7 @@
     #controls { margin-top:12px; gap:2px 18px; padding:9px 20px; font-size:13px; }
     #pressEnter { margin-top:14px; font-size:22px; }
     .selRow { margin-top:5px; }
+    .dailyRow { margin-top:7px; padding:5px 14px; font-size:13px; }
   }
 </style>
 </head>
@@ -323,6 +335,7 @@
     <div id="pressEnter">PRESS ENTER</div>
     <div id="selMountain" class="selRow"></div>
     <div id="selDiff" class="selRow"></div>
+    <div id="selDaily" class="dailyRow"></div>
     <div id="foot"><a id="ghLink" href="https://github.com/pranshuparmar/downhill-mayhem" target="_blank" rel="noopener">★ github.com/pranshuparmar/downhill-mayhem</a><br>
       Fan-made tribute. Not affiliated with Sony. No original game assets used. · All geometry, textures &amp; audio generated at runtime · three.js r128 (MIT) bundled</div>
   </div>
@@ -420,7 +433,9 @@ function fmtTime(t){ if(t==null) return '—'; const m=Math.floor(t/60), s=t-m*6
 const SEED=20030723;                       // Easter Egg! Downhill Domination's release date — July 23, 2003
 // ---- mountains: three fixed courses + the date-seeded Daily -----------------
 // each fixed course has its own personality knobs, forestation and biome bands
-const TERRAIN_ORDER=['classic','timber','rock','daily'];
+// the ← → cycle is the three hand-built mountains only; DAILY gets its own
+// showcase row on the title so it never hides as a fourth name in the cycle
+const TERRAIN_ORDER=['classic','timber','rock'];
 const TERRAINS={
   classic:{ label:'CLASSIC',    seed:SEED,     v:null, trees:1,   rocks:0 },
   timber: { label:'TIMBERLINE', seed:19770527, trees:1.8, rocks:0,
@@ -447,6 +462,7 @@ const DIFFS={
 };
 let DIFF_ID='mayhem', DIFF=DIFFS.mayhem;
 let CUR_SEED=SEED, NOFF=0, MODE='classic'; // Daily mode reseeds from the UTC date
+let CRAFTED_MODE='classic';                // last hand-built mountain picked (the ← → cursor; DAILY parks here)
 let COLD_EDGE=0.32, WARM_EDGE=0.68;        // where the frost ends / the canyon begins (per-course)
 let TREE_D=1, ROCK_D=0;                    // forestation / rock-garden density for the current course
 function terrLabel(id){ return id==='daily'?'DAILY':TERRAINS[id].label; }
@@ -839,7 +855,7 @@ window.addEventListener('keydown',e=>{
   // also the heel clicker, and the trick branch would shadow it forever
   // mode keys SWAP the selection but stay on the title — auto-starting here
   // meant a stray tap/keypress silently raced you onto the wrong mountain
-  else if(e.code==='KeyD'&&DEMO) setMode('daily',dailyEntrySeed());
+  else if(e.code==='KeyD'&&DEMO) selectDaily();
   else if(e.code==='KeyC'&&DEMO) setMode('classic');
   else if(e.code==='ArrowLeft'&&DEMO) cycleMountain(-1);
   else if(e.code==='ArrowRight'&&DEMO) cycleMountain(1);
@@ -1546,6 +1562,10 @@ function crashVoice(cause,vol){
   else AudioSys.crashSnd(vol,cause==='punched');
 }
 function handleLanding(r,impact){
+  // across the finish line already? this touchdown is post-race — a botched
+  // trick or hard landing PAST the line must never rob a finish that has
+  // effectively already happened (finishRider fires later this same step)
+  if(r.finished||r.s>=FINISH_S){ r.airTime=0; r.wasOnRamp=false; r.trick=null; return; }
   const air=r.airTime;
   r.airTime=0; r.wasOnRamp=false;
   let landGrade=null;
@@ -1620,6 +1640,9 @@ function riderStep(r,dt){
     r.crashT+=dt;
     r.vs=Math.max(0,r.vs-6*dt); r.vlat*=Math.pow(0.05,dt);
     r.s+=r.vs*dt; r.lat+=r.vlat*dt;
+    // even a tumble that slides across the line still finishes you: the race
+    // ends the instant you're across, not whenever the crash lets go
+    if(!r.finished&&r.s>=FINISH_S){ finishRider(r); return; }
     const gnd=groundHeight(r.s,r.lat);
     if(!r.grounded){ r.vy-=G*dt; r.y+=r.vy*dt; if(r.y<=gnd){ r.y=gnd; r.grounded=true; r.vy=0; } }
     else r.y=gnd;
@@ -1823,6 +1846,33 @@ function predictAirRemaining(r){
   }
   return t;
 }
+// is a jump ramp coming up within run-up range on this rider's lane? A racer
+// wants to be on the boost BEFORE the lip so they launch faster (bigger air =
+// room for a trick), not after it where boost does nothing airborne.
+function rampAheadFor(r){
+  for(const rp of ramps){
+    const d=rp.s0-r.s;
+    if(d>3&&d<32&&Math.abs((rp.latC||0)-r.lat)<(rp.halfW||6)+2.5) return true;
+  }
+  return false;
+}
+// AI boost policy — bank a real war chest, then spend it in ONE committed surge
+// where it pays: a straight, a ramp run-up, a slipstream pass, or the drag to
+// the line. The old code fired the instant the meter cracked ~25 and dribbled
+// it straight back down; a rider who does that never has boost when it matters.
+// hunt=true lets an avenger spend a smaller chest to run the player down.
+function aiBoostWant(r,maxV,cAhead,hunt){
+  const inp=r.inp;
+  if(inp.brake||!r.grounded||r.vs>=maxV*1.02||r.meter<=BOOST_MIN) return false;
+  const finalKick=r.s>FINISH_S-400;
+  const floor=finalKick?BOOST_MIN:(hunt?BOOST_MIN+2:10);   // committed-burst drain floor (empty the tank at the line)
+  if(r.boosting) return r.meter>floor;                     // already lit → hold the surge
+  if(finalKick) return true;
+  const bank=hunt?BOOST_MIN+7:40+(r.idx%3)*7;              // how much to save before opening a surge (staggered)
+  if(r.meter<bank) return false;
+  if(hunt) return true;                                    // hunter with a chest → send it to close
+  return Math.abs(cAhead)<0.02||r.draftT>0.35||rampAheadFor(r);
+}
 function aiThink(r,dt){
   const inp=r.inp;
   inp.pedal=0; inp.brake=0; inp.steer=0; inp.hop=false; inp.boost=false; inp.punch=false; inp.trick=null;
@@ -1874,9 +1924,7 @@ function aiThink(r,dt){
     // you down from behind), burn the war chest, and just steer onto the
     // player — the strike logic swings the instant you're in reach. Deck a
     // BRUTAL rival and they punish you AND stay in the race.
-    const fireAt=r.s>FINISH_S-400?BOOST_MIN+3:BOOST_MIN+2;
-    if(!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>(r.boosting?BOOST_MIN+1:fireAt))
-      inp.boost=true;
+    if(aiBoostWant(r,maxV,cAhead,true)) inp.boost=true;
     target=player.lat;
   } else if(hunting){
     // run the player down — feathering the approach so they don't blow past —
@@ -1884,7 +1932,7 @@ function aiThink(r,dt){
     if(gap>2.5){
       const closeV=player.vs+1.5*DIFF.rev+gap*0.55;
       if(r.vs>closeV){ inp.brake=1; inp.pedal=0; }
-      else if(gap>3&&!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>BOOST_MIN+2) inp.boost=true;
+      else if(gap>3&&aiBoostWant(r,maxV,cAhead,true)) inp.boost=true;
     }
     else if(gap<-3){ inp.pedal=0; inp.brake=1; }
     else {
@@ -1916,13 +1964,9 @@ function aiThink(r,dt){
       if(ds>-3&&ds<0.5&&Math.abs(o.lat-r.lat)<1.5&&(o.windupT>=0||(o.isPlayer&&r.punchCd>0.4)))
         target+=(r.lat>=o.lat?2.2:-2.2);
     }
-    // burn the meter like they mean it: any banked war chest goes out as a
-    // visible surge whenever the next corner allows — no "only when losing"
-    // clause, racers want speed — staggered per rider so the pack doesn't
-    // fire in unison, and the last 400 m drains whatever is left in the tank
-    const fireAt=r.s>FINISH_S-400?BOOST_MIN+3:20+r.idx*2.5;
-    if(!inp.brake&&r.grounded&&r.vs<maxV*1.02&&r.meter>(r.boosting?BOOST_MIN+1:fireAt))
-      inp.boost=true;
+    // bank a chest, then spend it in a real surge on a straight, a ramp run-up
+    // or a slipstream pass — not a permanent dribble (see aiBoostWant)
+    if(aiBoostWant(r,maxV,cAhead,false)) inp.boost=true;
   }
   // dodge slalom trees and rock gardens ahead: a lone obstacle gets a side-
   // step; when the side-step lands on a neighbour (clustered rocks), swing
@@ -1961,19 +2005,28 @@ function aiThink(r,dt){
   inp.steer=clamp((desiredVlat-r.vlat)*0.45,-1,1);
 
   if(r.grounded){
-    // hop off ramp lips sometimes (nobody showboats mid-vendetta)
+    r.trickRolled=false;   // fresh per-jump trick decision on every touchdown
+    // hop off ramp lips for air — everyone showboats a little, the trick-happy
+    // riders a lot more (nobody bothers mid-vendetta)
     const rampH=rampHeightAt(r.s,r.lat);
-    if(rampH>0.05&&r.def.trick>0.4&&!hunting){ let onLip=false;
-      for(const rp of ramps){ if(r.s>=rp.s0&&r.s<=rp.s0+rp.len&&(r.s-rp.s0)/rp.len>0.75){ onLip=true; break; } }
-      if(onLip) inp.hop=Math.random()<dt*1.5;
+    if(rampH>0.05&&!hunting){ let onLip=false;
+      for(const rp of ramps){ if(r.s>=rp.s0&&r.s<=rp.s0+rp.len&&(r.s-rp.s0)/rp.len>0.72){ onLip=true; break; } }
+      if(onLip) inp.hop=Math.random()<dt*(1.3+r.def.trick*2.8);
     }
-  } else if(!r.trick&&r.airTime>0.25&&!hunting){
-    // visual tricks (skill-scaled, occasionally botched)
-    if(Math.random()<r.def.trick*2.6*dt){
-      const rem=predictAirRemaining(r)-0.15;
+  } else if(!r.trick&&!r.trickRolled&&r.airTime>0.24&&!hunting){
+    // decide ONCE per jump whether to throw a trick, and which — banking the
+    // roll so a whole flight can't fizzle away on a per-frame coin-flip the way
+    // it used to. Skill sets both the odds and the ambition; the trick is sized
+    // to the air actually available, and reckless riders cut the landing closer
+    // (smaller margin) so they genuinely bail now and then, like a person.
+    r.trickRolled=true;
+    const rem=predictAirRemaining(r)-(0.12-r.def.crashy*0.05);
+    if(rem>TRICKS.nohander.dur && Math.random()<0.36+r.def.trick*0.58){
+      const menu=r.def.trick>0.7?['heel','backflip','superman','nohander']
+                :r.def.trick>0.45?['superman','backflip','nohander']
+                :['nohander','superman'];
       let pick=null;
-      for(const k of ['heel','backflip','superman','nohander']) if(TRICKS[k].dur<rem){ pick=k; break; }
-      if(!pick&&Math.random()<r.def.crashy*0.35) pick='nohander';
+      for(const k of menu) if(TRICKS[k].dur<rem){ pick=k; break; }
       if(pick) startTrick(r,pick);
     }
   }
@@ -2101,6 +2154,7 @@ function challengeLink(t){
 }
 function setMode(mode,seed){
   MODE=mode;
+  if(mode!=='daily') CRAFTED_MODE=mode;   // remember where the ← → cursor rests
   const s=mode==='daily'?(seed||dailySeed()):TERRAINS[mode].seed;
   if(s!==CUR_SEED){ rebuildWorld(s);
     for(const r of riders) r.y=groundHeight(r.s,r.lat); }
@@ -2130,22 +2184,37 @@ function refreshTitle(){
   document.getElementById('pressEnter').textContent=
     challengeActive()?(IS_TOUCH?'TAP — ACCEPT CHALLENGE':'ENTER — ACCEPT CHALLENGE')
     :(IS_TOUCH?'TAP TO START':'PRESS ENTER');
-  const dTag=MODE==='daily'?' · '+seedLabel(CUR_SEED):'';
-  document.getElementById('selMountain').innerHTML=
-    '⛰ MOUNTAIN &nbsp;◀ <b>'+terrLabel(MODE)+dTag+'</b> ▶'+(IS_TOUCH?' <span class="k">TAP</span>':' <span class="k">← →</span>');
+  const onDaily=MODE==='daily';
+  // the mountain row always shows the crafted cursor; when DAILY is the pick it
+  // dims to read as "not the active choice" and the DAILY card lights up instead
+  const sm=document.getElementById('selMountain');
+  sm.className='selRow'+(onDaily?' muted':'');
+  sm.innerHTML=
+    '⛰ MOUNTAIN &nbsp;◀ <b>'+TERRAINS[CRAFTED_MODE].label+'</b> ▶'+(IS_TOUCH?' <span class="k">TAP</span>':' <span class="k">← →</span>');
   document.getElementById('selDiff').innerHTML=
     '🔥 DIFFICULTY &nbsp;◀ <b>'+DIFF.label+'</b> ▶'+(IS_TOUCH?' <span class="k">TAP</span>':' <span class="k">↑ ↓</span>');
+  // DAILY: its own showcase, never buried as a fourth name in the cycle. Shows
+  // today's date and reads as "racing" when active, an invitation otherwise.
+  const sday=document.getElementById('selDaily');
+  sday.className='dailyRow'+(onDaily?' active':'');
+  sday.innerHTML='📅 <b>TODAY’S DAILY</b> · '+seedLabel(dailyEntrySeed())
+    +' — a brand-new mountain every day'
+    +(onDaily?' <span class="k">▶ RACING</span>':(IS_TOUCH?' <span class="k">TAP TO PLAY</span>':' <span class="k">PRESS D</span>'));
 }
 // while a daily challenge waits, DAILY means THAT daily — otherwise cycling
 // away and back would land on today's seed and the challenge could never be
 // re-armed ("switch back to race it" has to stay true)
 function dailyEntrySeed(){ return CHAL&&CHAL.terrain==='daily'?CHAL.seed:dailySeed(); }
 function cycleMountain(dir){
-  const i=TERRAIN_ORDER.indexOf(MODE);
+  // cycling from DAILY steps off it back onto the hand-built mountains, resuming
+  // from wherever the crafted cursor last rested
+  const cur=MODE==='daily'?CRAFTED_MODE:MODE;
+  const i=TERRAIN_ORDER.indexOf(cur);
   const next=TERRAIN_ORDER[(i+dir+TERRAIN_ORDER.length)%TERRAIN_ORDER.length];
   AudioSys.uiTick(dir>0);
-  setMode(next, next==='daily'?dailyEntrySeed():undefined);
+  setMode(next);
 }
+function selectDaily(){ AudioSys.uiTick(true); setMode('daily',dailyEntrySeed()); }
 function cycleDiff(dir){
   AudioSys.uiTick(dir>0);
   const i=DIFF_ORDER.indexOf(DIFF_ID);
@@ -2167,7 +2236,7 @@ function resetRiders(){
     r.vs=0; r.vlat=0; r.vy=0; r.grounded=true; r.steerPos=0; r.airTime=0; r.driftT=0; r.wallT=0;
     r.draftT=0; r.grudge=false; r.revengeT=0;
     r.finished=false; r.finishTime=null; r.racePos=r.idx+1; r.rubber=0;
-    r.trick=null; r.trickT=0; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
+    r.trick=null; r.trickT=0; r.trickRolled=false; r.chain=0; r.pendingMeter=0; r.pendingNames.length=0;
     r.meter=r.isPlayer?0:DIFF.meter0[0]+Math.random()*(DIFF.meter0[1]-DIFF.meter0[0]);
     r.boosting=false; r.boostLatch=false;
     r.crashed=false; r.crashT=0; r.invuln=0; r.punchAnimT=-1; r.kickAnimT=-1; r.windupT=-1;
@@ -2206,6 +2275,9 @@ function startDemoRace(){
 }
 function finishRider(r){
   r.finished=true; r.finishTime=raceTime; r.revengeT=0;
+  // the line locks the result in whatever pose you crossed in — end any
+  // wipeout or in-progress (unlanded, so unpaid) trick outright
+  r.crashed=false; r.trick=null; r.pendingMeter=0; r.pendingNames.length=0;
   if(r.isPlayer){
     if(DEMO) return;   // the attract bot's runs count for nothing
     state='finished';
@@ -2368,6 +2440,9 @@ function showResults(){
   document.getElementById('shareBtn').style.display=player.finished?'':'none';
   SHARE_DATA=player.finished?{ place, time:player.finishTime, rank:player.rank||null,
     recap:raceRecap(order,place), newPB:!!player.newPB,
+    // a challenge run carries its verdict so the shared card says so too, not
+    // just the results screen (null on a normal race)
+    chalDiff:(player.chalDiff!=null?player.chalDiff:null),
     mode:terrLabel(MODE)+(MODE==='daily'?' · '+seedLabel(CUR_SEED):'')+' · '+DIFF.label,
     // the card always carries the PUBLIC challenge url — a screenshot of a
     // local run should still hand strangers a working race-me link
@@ -2449,7 +2524,24 @@ function buildResultCard(){
   let mpx=27; g.font=font(mpx,700);
   while(g.measureText(S.mode).width>1000&&mpx>18){ mpx--; g.font=font(mpx,700); }
   g.fillStyle='#9fd'; g.fillText(S.mode,cx,836);
-  if(S.newPB){ g.font=font(36,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,892); }
+  // a challenge run stamps its verdict — the whole reason a friend sent the
+  // link — in the same green/red language as the results screen
+  let pbY=892;
+  if(S.chalDiff!=null){
+    const won=S.chalDiff<0;
+    const bcol=won?'#59ff7a':'#ff7a6f';
+    const txt=won?('⚑ CHALLENGE BEATEN  −'+(-S.chalDiff).toFixed(2)+'s')
+                 :('⚑ CHALLENGE MISSED  +'+S.chalDiff.toFixed(2)+'s');
+    g.font=font(40,900);
+    const bw=g.measureText(txt).width+72, by=886;
+    g.fillStyle=won?'rgba(40,180,90,.22)':'rgba(200,60,50,.22)';
+    g.fillRect(cx-bw/2,by-42,bw,58);
+    g.lineWidth=5; g.strokeStyle=bcol; g.strokeRect(cx-bw/2,by-42,bw,58);
+    g.fillStyle='rgba(0,0,0,.8)'; g.fillText(txt,cx+3,by+2);
+    g.fillStyle=bcol; g.fillText(txt,cx,by);
+    pbY=946;   // push the PB line clear of the badge
+  }
+  if(S.newPB){ g.font=font(33,700); g.fillStyle='#ffd23f'; g.fillText('★ NEW PERSONAL BEST ★',cx,pbY); }
   // the challenge: the whole point of the card (shrink until daily links fit)
   const raceLine='RACE MY TIME → '+S.chal;
   let fpx=31; g.font=font(fpx,700);
@@ -2538,6 +2630,9 @@ function initHud(){
   const sd2=document.getElementById('selDiff');
   sd2.addEventListener('pointerdown',stopper);
   sd2.addEventListener('click',e=>{ e.stopPropagation(); if(DEMO) cycleDiff(1); });
+  const sday=document.getElementById('selDaily');
+  sday.addEventListener('pointerdown',stopper);
+  sday.addEventListener('click',e=>{ e.stopPropagation(); if(DEMO) selectDaily(); });
   document.getElementById('ghLink').addEventListener('pointerdown',stopper);
   hudEls.posBig=hudEls.pos.querySelector('.big');
   hudEls.speedNum=hudEls.speed.querySelector('.num');

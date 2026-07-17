@@ -52,7 +52,7 @@ no build step, no npm, no server, no network.
 | `T` | Toggle the CRT scanline/vignette filter |
 | `G` | Toggle the ghost of your best run |
 | `H` | Show/hide the control-hint line (it auto-fades a few seconds into each race) |
-| `Esc` / `Backspace` | Back to the title screen — pick your mountain (`←`/`→`) and difficulty (`↑`/`↓`) there (the results screen has a ⌂ button too). In fullscreen use `Backspace` or ⌂: browsers reserve `Esc` for exiting fullscreen |
+| `Esc` / `Backspace` | Back to the title screen — pick your mountain (`←`/`→`), difficulty (`↑`/`↓`) or today's **DAILY** (`D`) there (the results screen has a ⌂ button too). In fullscreen use `Backspace` or ⌂: browsers reserve `Esc` for exiting fullscreen |
 | `⛶` (top-right) | Fullscreen on/off — on desktop and mobile alike |
 | 🎮 Controller | DualShock/Xbox or any standard pad: stick steer · R2 pedal · L2 brake (backflip in air) · R1 boost · ✕ start/hop · □ punch · ○ kick · L1/△/R3 tricks |
 
@@ -62,15 +62,20 @@ Start a trick in the air and *land after its bar fills* to bank boost meter; lan
 and you eat dirt — though a pose trick that's *nearly* done can be saved: no payout, a wobble,
 but you keep the bike under you. The **backflip** is stricter, though — it's a full rotation,
 so land it before you've come most of the way around and you land on your head, no save.
-Chain tricks in one jump for bonus meter, and clean riding trickles
+The finish line trumps all of it, though: cross it and your result locks the instant you're
+across — airborne or grounded, trick landed or blown — so a flip you botch right at the
+banner still counts you home. Chain tricks in one jump for bonus meter, and clean riding trickles
 meter in on its own — crashing dumps most of it. Monster airs land heavy but rideable
 (air drag caps your fall speed) — what actually bites is casing an upslope face at
 speed. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
 lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
 slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
-land a mid-air kick for an AIR STRIKE bonus. The pack races for keeps: rivals roll
-off the gate with boost already banked, burn it in visible surges to close any gap,
+land a mid-air kick for an AIR STRIKE bonus. They ride like people, too: they throw
+tricks off the kickers for their own boost, and they *hoard* the meter rather than
+dribble it — banking a war chest, then spending it in one real surge on a straight or
+into a ramp lip (a boosted launch buys the air for a bigger trick). The pack races for
+keeps: rivals roll off the gate with boost already banked, burn it to close any gap,
 hound a clean leader all the way down, and empty the tank over the final stretch —
 no lead is safe. Fall off the back and a couple of backmarkers will dawdle within
 sight to keep the race alive — but the leaders never wait, and if you're crash-looping
@@ -78,9 +83,11 @@ they'll all leave you to the mountain. Every race deals five rivals from a
 twenty-strong roster with fresh names and jersey colours, so the field never feels
 like the same faces twice.
 
-**Four mountains, three difficulties:** pick both on the title screen (`←`/`→` cycles
-the mountain, `↑`/`↓` the difficulty; tap the rows on touch) — each flick clunks like a
-cassette-deck button.
+**Four mountains, three difficulties:** pick both on the title screen — `←`/`→` cycles
+the three hand-built mountains, `↑`/`↓` the difficulty (tap the rows on touch), each flick
+clunking like a cassette-deck button. The **DAILY** gets its own showcase row below the
+selectors so it never hides as a fourth name in the cycle — hit it (`D`, or tap) to drop
+onto today's mountain.
 
 - **CLASSIC** — the canonical course: alpine frost into warm canyon, the all-rounder.
 - **TIMBERLINE** — dense forest, tight rhythm, slalom tree weaves everywhere.
@@ -89,8 +96,9 @@ cassette-deck button.
   read them early, pick a side, or bunny-hop straight through. Even the AI checks
   its speed and threads a lane (avengers don't).
 - **DAILY** — a brand-new mountain from today's UTC date, identical for every player in
-  the world. Every daily rolls its own personality: twist, rhythm, steepness, drops,
-  kickers, forestation, biome split — and some days, rocks.
+  the world, with its own framed showcase row on the title (press `D` or tap it). Every
+  daily rolls its own personality: twist, rhythm, steepness, drops, kickers, forestation,
+  biome split — and some days, rocks.
 
 Difficulties: **CHILL** (a pack you can outride cleanly), **MAYHEM** (the game as
 designed — rivals cruise above your clean ceiling; spend boost, tricks, draft or fists),
@@ -115,7 +123,9 @@ Hit **📸 SHARE RESULT CARD** for a shot of your rider on the mountain with you
 stamped over it and your time — generated locally (like everything else) and handed to
 your device's share sheet, or saved as a PNG where sharing isn't available. The card
 carries your **challenge link as text**, so anyone who sees the image can type it in
-and race your exact mountain and time. Restarts use a shortened
+and race your exact mountain and time — and if the run *was* a challenge, it stamps your
+**CHALLENGE BEATEN / MISSED** verdict right on the card too, so a won challenge reads as a
+win at a glance, not as any other race. Restarts use a shortened
 countdown after the first race, and `Esc` returns to the title screen.
 
 **Challenge your friends:** after any race, hit **CHALLENGE A FRIEND** on the results
