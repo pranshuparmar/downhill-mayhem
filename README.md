@@ -71,10 +71,14 @@ speed. The groomed line is fastest, but the
 whole hillside is rideable: rollers, dirt patches and slalom trees open up alternate
 lines. Corners throw you outward — hold the turn and counter-steer, or commit to the
 slide. Rivals shove, punch and kick when you ride close — swing first (`E`/`F`), and
-land a mid-air kick for an AIR STRIKE bonus. They ride like people, too: they throw
-tricks off the kickers for their own boost, and they *hoard* the meter rather than
-dribble it — banking a war chest, then spending it in one real surge on a straight or
-into a ramp lip (a boosted launch buys the air for a bigger trick). The pack races for
+land a mid-air kick for an AIR STRIKE bonus. They mix it up, too: a rival throws
+jabs *and* boots at random, and the hit tells you which caught you (a **KICKED!**
+reads and lands harder than a **PUNCHED!**). They ride like people, too: they throw
+tricks off the kickers for their own boost, and they spend the meter *with a plan*
+instead of dribbling it away — a quick early squeeze to finish a pass or clear a ramp
+lip (a boosted launch buys the air for a bigger trick), a bigger chest saved for a
+straight, and a near-full bar spent rather than wasted. Early or full, it's a judgement
+call, not a fixed wait. The pack races for
 keeps: rivals roll off the gate with boost already banked, burn it to close any gap,
 hound a clean leader all the way down, and empty the tank over the final stretch —
 no lead is safe. Fall off the back and a couple of backmarkers will dawdle within
