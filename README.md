@@ -34,7 +34,7 @@ too — plug in a DualShock/Xbox pad and press ✕.
 
 The whole game is a single self-contained `index.html` — three.js included inside it —
 no build step, no npm, no server; the gameplay makes no network calls at all (the hosted
-build adds one anonymous, cookieless visit count — see the Tech notes).
+build counts anonymous, cookieless visits and milestones — see [Analytics](#analytics)).
 
 ## Controls
 
@@ -183,9 +183,23 @@ knocked you down and honour is settled. Then they go back to racing.
   aggressive distance fog, instanced pine trees and boulders, blob shadows, and an
   optional CRT scanline overlay.
 - Zero accounts, zero ads, zero cookies, zero tracking of *you*. Your best times live in
-  `localStorage` on your own machine and nothing about your play ever leaves it. The
-  downloadable file makes no external calls at all — double-click it and it is fully
-  offline. The **hosted** build (GitHub Pages / itch) adds exactly one: an anonymous,
-  cookieless [GoatCounter](https://www.goatcounter.com/) page-view count — an aggregate
-  hit tally with no personal data and nothing that identifies a player — loaded
-  asynchronously so it can never slow down or break the game.
+  `localStorage` on your own machine and nothing about your play ever leaves it. See
+  [Analytics](#analytics) for the one request the published site makes.
+
+## Analytics
+
+The published site counts visits and a handful of anonymous milestones — a race
+started (and on which mountain and difficulty), a race finished, a win, a
+personal best, a top grade, a photo finish, first boost, first trick, a three-trick
+combo, a rival decked, a payback taken, a crash, a challenge link arrived at,
+copied, beaten or missed, and a result card saved or shared — via
+[GoatCounter](https://www.goatcounter.com/): cookieless, no identifier stored in
+the browser, and nothing about you kept. It is a thin wrapper that silently
+no-ops when the counter is blocked or unavailable, so the game never depends on
+it, and each event counts at most once per page load — the interesting figures
+are per-visit ratios (started vs finished vs won), not repeat presses.
+
+It is skipped entirely on `file://`, `localhost` and LAN addresses, so a local or
+offline copy makes no network request at all and local play stays out of the
+numbers. Nothing about this appears in the game itself; the milestones a page
+load would count are listed in `window.TRACKED` if you want to audit them.
