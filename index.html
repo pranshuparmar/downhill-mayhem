@@ -3093,5 +3093,21 @@ playerInput=function(){ if(GAME.test.autopilotOn&&FAST){ /* aiThink already fill
 
 boot();
 </script>
+<!-- Anonymous, cookieless visit count (GoatCounter), HOSTED build only. It never
+     runs from file:// so the downloadable game stays fully offline with zero
+     external calls, and it is async + fail-silent, so a slow or unreachable
+     counter can never delay or break the game. No personal data, no cookies,
+     nothing that identifies a player — just an aggregate hit count. Swap the
+     endpoint below for your own GoatCounter site code. -->
+<script>
+(function(){
+  if(!/^https?:$/.test(location.protocol)) return;   // local / offline file → do nothing
+  var s=document.createElement('script');
+  s.async=true; s.src='https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter','https://downhill-mayhem.goatcounter.com/count');
+  s.onerror=function(){};                             // counter unreachable? the game plays on
+  document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>
