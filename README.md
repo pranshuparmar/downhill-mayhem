@@ -33,7 +33,8 @@ the game pauses; tap to drop back in. 🎮 Controllers work
 too — plug in a DualShock/Xbox pad and press ✕.
 
 The whole game is a single self-contained `index.html` — three.js included inside it —
-no build step, no npm, no server, no network.
+no build step, no npm, no server; the gameplay makes no network calls at all (the hosted
+build adds one anonymous, cookieless visit count — see the Tech notes).
 
 ## Controls
 
@@ -181,5 +182,10 @@ knocked you down and honour is settled. Then they go back to racing.
 - PS2-era look on purpose: chunky flat-shaded low-poly terrain with vertex colours,
   aggressive distance fog, instanced pine trees and boulders, blob shadows, and an
   optional CRT scanline overlay.
-- Zero accounts, zero ads, zero analytics, zero external calls of any kind.
-  Your best times live in `localStorage` on your own machine.
+- Zero accounts, zero ads, zero cookies, zero tracking of *you*. Your best times live in
+  `localStorage` on your own machine and nothing about your play ever leaves it. The
+  downloadable file makes no external calls at all — double-click it and it is fully
+  offline. The **hosted** build (GitHub Pages / itch) adds exactly one: an anonymous,
+  cookieless [GoatCounter](https://www.goatcounter.com/) page-view count — an aggregate
+  hit tally with no personal data and nothing that identifies a player — loaded
+  asynchronously so it can never slow down or break the game.
