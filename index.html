@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>DOWNHILL MAYHEM — free fan-made downhill racing tribute</title>
-<meta name="description" content="Free PS2-style downhill mountain-bike racing in your browser: 6 riders, big-air tricks that charge boost, and punches that settle the rest. No ads, no sign-up — press Enter and ride.">
+<title>DOWNHILL MAYHEM — free fan-made Downhill Domination tribute</title>
+<meta name="description" content="Free browser tribute to Downhill Domination (PS2, 2003): 6 riders, big-air tricks that charge boost, and punches that settle the rest. No ads, no sign-up — press Enter and ride.">
 <meta property="og:title" content="DOWNHILL MAYHEM — free PS2-style downhill racing in your browser">
 <meta property="og:description" content="One mountain, six riders, tricks that charge boost, punches and kicks that settle the rest. A fan-made tribute to Downhill Domination (2003). Free, no ads, no sign-up.">
 <meta property="og:type" content="website">
@@ -412,6 +412,9 @@
      downloaded or offline copy makes NO network request at all and local play
      stays out of the numbers.
 
+     It DOES count inside an iframe (count.js skips frames by default): game
+     portals embed it that way, and the embedding page shows up as the referrer.
+
      count.js loads async, so events fired before it lands are queued and
      flushed once it is ready; if it never arrives the queue is quietly dropped.
      Each event counts at most ONCE per page load — the interesting figures are
@@ -437,6 +440,7 @@ window.TRACK=(function(){
     var s=document.createElement('script');
     s.async=true; s.src='https://gc.zgo.at/count.js';
     s.setAttribute('data-goatcounter',ENDPOINT);
+    s.setAttribute('data-goatcounter-settings','{"allow_frame":true}');   // portal embeds count too
     s.onerror=function(){ queue.length=0; };   // blocked: stop caring
     (document.head||document.documentElement).appendChild(s);
   }
@@ -2403,6 +2407,7 @@ function finishRider(r){
     // what difficulty, and how it went for them
     TRACK('race-finished');
     TRACK('race-finished-'+DIFF_ID);
+    TRACK(IS_TOUCH?'race-finished-touch':'race-finished-desktop');   // vs started-touch/-desktop
     if(place===1) TRACK('race-won');
     if(newPB) TRACK('personal-best');
     if(r.rank==='S') TRACK('rank-legendary');
@@ -2463,6 +2468,10 @@ function updateRace(dt){
     posPopupCd-=dt;
     if(state==='racing'&&!DEMO){
       RACE_STATS.topSpeed=Math.max(RACE_STATS.topSpeed,player.vs*3.6);
+      // where on the 2.3 km do the riders who never finish drop out?
+      if(player.s>=FINISH_S*0.25) TRACK('race-reached-25');
+      if(player.s>=FINISH_S*0.50) TRACK('race-reached-50');
+      if(player.s>=FINISH_S*0.75) TRACK('race-reached-75');
       const pos=player.racePos;
       if(pos!==prevPlayerPos){
         if(prevPlayerPos>0&&raceTime>3&&posPopupCd<=0&&!player.finished){
