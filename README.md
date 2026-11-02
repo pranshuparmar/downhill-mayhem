@@ -189,17 +189,21 @@ knocked you down and honour is settled. Then they go back to racing.
 ## Analytics
 
 The published site counts visits and a handful of anonymous milestones — a race
-started (and on which mountain and difficulty), a race finished, a win, a
-personal best, a top grade, a photo finish, first boost, first trick, a three-trick
-combo, a rival decked, a payback taken, a crash, a challenge link arrived at,
-copied, beaten or missed, and a result card saved or shared — via
-[GoatCounter](https://www.goatcounter.com/): cookieless, no identifier stored in
-the browser, and nothing about you kept. It is a thin wrapper that silently
-no-ops when the counter is blocked or unavailable, so the game never depends on
-it, and each event counts at most once per page load — the interesting figures
-are per-visit ratios (started vs finished vs won), not repeat presses.
+started (and on which mountain and difficulty, touch or desktop), how far down the
+course it got (a quarter, half, three quarters), a race finished (and on which
+difficulty, touch or desktop), a win, a personal best, a top grade, a photo
+finish, first boost, first trick, a three-trick combo, a rival decked, a payback
+taken, a crash, a challenge link arrived at, copied, beaten or missed, and a
+result card saved or shared — via [GoatCounter](https://www.goatcounter.com/):
+cookieless, no identifier stored in the browser, and nothing about you kept. It is
+a thin wrapper that silently no-ops when the counter is blocked or unavailable, so
+the game never depends on it, and each event counts at most once per page load —
+the interesting figures are per-visit ratios (started vs finished vs won), not
+repeat presses.
 
 It is skipped entirely on `file://`, `localhost` and LAN addresses, so a local or
 offline copy makes no network request at all and local play stays out of the
-numbers. Nothing about this appears in the game itself; the milestones a page
-load would count are listed in `window.TRACKED` if you want to audit them.
+numbers. It does count when the game is embedded in an iframe on another site, so
+the embedding page shows up as the referrer. Nothing about this appears in the
+game itself; the milestones a page load would count are listed in `window.TRACKED`
+if you want to audit them.
